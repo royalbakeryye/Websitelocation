@@ -5,31 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>مسافات التوصيل</title>
 <style>
-:root{--bg:#f4f6fa;--card:#fff;--tx:#14203a;--mut:#64708a;--bd:#e3e8f1;--pr:#0f6fff;--pr2:#0a4fc4;--ok:#12a150;--wr:#e8590c;--bar:#9ec1ff;
+:root{--bg:#f4f6fa;--card:#fff;--tx:#14203a;--mut:#64708a;--bd:#e3e8f1;--pr:#0f6fff;--ok:#12a150;--wr:#e8590c;--bar:#9ec1ff;--gold:#f5b301;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1424;--card:#16203a;--tx:#eaf0ff;--mut:#98a5c4;--bd:#25314f;--pr:#4b8dff;--pr2:#2f6fe0;--ok:#3ccf7e;--wr:#ff8a4c;--bar:#2c4a85;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0d1424;--card:#16203a;--tx:#eaf0ff;--mut:#98a5c4;--bd:#25314f;--pr:#4b8dff;--pr2:#2f6fe0;--ok:#3ccf7e;--wr:#ff8a4c;--bar:#2c4a85;color-scheme:dark}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1424;--card:#16203a;--tx:#eaf0ff;--mut:#98a5c4;--bd:#25314f;--pr:#4b8dff;--ok:#3ccf7e;--wr:#ff8a4c;--bar:#2c4a85;color-scheme:dark}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",system-ui,sans-serif;line-height:1.5}
 .wrap{max-width:640px;margin:0 auto;padding:16px}
 header{display:flex;align-items:center;justify-content:space-between;margin:4px 0 14px}
-h1{font-size:20px;margin:0}
-.sub{color:var(--mut);font-size:13px}
+h1{font-size:20px;margin:0}.sub{color:var(--mut);font-size:13px}
 .tabs{display:flex;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:4px;margin-bottom:14px}
-.tabs button{flex:1;border:0;background:none;color:var(--mut);padding:10px;border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
+.tabs button{flex:1;border:0;background:none;color:var(--mut);padding:10px 4px;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;font-size:14px}
 .tabs button.on{background:var(--pr);color:#fff}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px rgba(20,32,58,.05)}
 .steps{display:flex;gap:8px;margin-bottom:14px}
 .step{flex:1;text-align:center;font-size:12px;color:var(--mut);padding:8px 4px;border-radius:10px;border:1px dashed var(--bd)}
-.step.done{color:var(--ok);border-color:var(--ok);border-style:solid;font-weight:700}
-.step.cur{color:var(--pr);border-color:var(--pr);border-style:solid;font-weight:700}
-label{font-size:13px;color:var(--mut);display:block;margin-bottom:6px}
-input[type=text],input[type=date]{width:100%;padding:12px;border-radius:12px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font:inherit}
-.btn{width:100%;border:0;border-radius:16px;padding:18px;font:inherit;font-size:17px;font-weight:700;color:#fff;cursor:pointer;margin-top:12px;background:var(--pr)}
-.btn:active{transform:scale(.98)}
-.btn.g{background:var(--ok)}
-.btn.s{background:none;color:var(--wr);border:1px solid var(--bd);padding:12px;font-size:14px;font-weight:600}
+.step.done{color:var(--ok);border:1px solid var(--ok);font-weight:700}.step.cur{color:var(--pr);border:1px solid var(--pr);font-weight:700}
+label{font-size:13px;color:var(--mut);display:block;margin:10px 0 6px}
+input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font:inherit}
+.btn{width:100%;border:0;border-radius:16px;padding:16px;font:inherit;font-size:17px;font-weight:700;color:#fff;cursor:pointer;margin-top:12px;background:var(--pr)}
+.btn:active{transform:scale(.98)}.btn.g{background:var(--ok)}
+.btn.s{background:none;color:var(--wr);border:1px solid var(--bd);padding:12px;font-size:14px;font-weight:600;margin-top:0}
 .btn[disabled]{opacity:.5}
 .msg{margin-top:12px;font-size:14px;padding:10px 12px;border-radius:12px;background:var(--bg);display:none}
 .msg.err{color:var(--wr);display:block}.msg.ok{color:var(--ok);display:block}
@@ -37,38 +32,56 @@ input[type=text],input[type=date]{width:100%;padding:12px;border-radius:12px;bor
 .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px}
 .chip{flex:none;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:8px 16px;border-radius:99px;font:inherit;font-size:14px;cursor:pointer}
 .chip.on{background:var(--pr);border-color:var(--pr);color:#fff;font-weight:700}
-.range{display:none;gap:10px;margin-bottom:12px}.range.show{display:flex}.range div{flex:1}
+.range{display:none;gap:10px;margin-bottom:12px}.range.show{display:flex}.range div{flex:1}.range label{margin-top:0}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
 .stat{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:12px}
 .stat span{font-size:12px;color:var(--mut)}.stat b{display:block;font-size:22px}
 .chart{display:flex;align-items:flex-end;gap:6px;height:130px;overflow-x:auto;padding-top:8px}
 .col{flex:1;min-width:26px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
 .col i{width:100%;background:var(--bar);border-radius:6px 6px 0 0;min-height:3px}
-.col small{font-size:10px;color:var(--mut);margin-top:4px;white-space:nowrap}
-.col em{font-size:10px;font-style:normal}
+.col small{font-size:10px;color:var(--mut);margin-top:4px;white-space:nowrap}.col em{font-size:10px;font-style:normal}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--bd)}
-.row:last-child{border:0}
-.row .d{font-weight:700;color:var(--pr);font-size:18px;white-space:nowrap}
-.row .m{font-size:12px;color:var(--mut)}
-.row button{border:0;background:none;color:var(--wr);cursor:pointer;font-size:18px}
+.row:last-child{border:0}.row .d{font-weight:700;color:var(--pr);font-size:18px;white-space:nowrap}
+.row .m{font-size:12px;color:var(--mut)}.row button{border:0;background:none;color:var(--wr);cursor:pointer;font-size:18px}
 .empty{text-align:center;color:var(--mut);padding:24px 0}
-.tools{display:flex;gap:10px}.tools .btn{margin-top:0}
-.hide{display:none}
+.tools{display:flex;gap:10px}.hide{display:none!important}
+.lb{padding:12px 0;border-bottom:1px solid var(--bd)}.lb:last-child{border:0}.lb.me{background:color-mix(in srgb,var(--pr) 10%,transparent);border-radius:12px;padding:12px}
+.lbh{display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px}
+.bar{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mut);margin-top:4px}
+.bar span{width:70px;flex:none}.bar div{flex:1;height:10px;background:var(--bd);border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:6px}.bar b{width:62px;flex:none;color:var(--tx);text-align:start}
+.link{background:none;border:0;color:var(--pr);font:inherit;cursor:pointer;margin-top:12px;width:100%}
+.out{border:1px solid var(--bd);background:none;color:var(--mut);border-radius:10px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
 </style>
 </head>
 <body>
 <div class="wrap">
-<header><div><h1>🛵 مسافات التوصيل</h1><div class="sub">المسافة الجوية بين المطعم والعميل</div></div></header>
-<div class="tabs"><button id="t1" class="on">التوصيل</button><button id="t2">السجل والإحصائيات</button></div>
+
+<!-- تسجيل الدخول -->
+<section id="auth" class="hide">
+  <header><div><h1>🛵 مسافات التوصيل</h1><div class="sub">سجّل الدخول للمتابعة</div></div></header>
+  <div class="card">
+    <div id="nmBox" class="hide"><label for="nm">الاسم الظاهر في المنافسة</label><input id="nm" type="text" placeholder="مثال: أحمد"></div>
+    <label for="un">اسم المستخدم (إنجليزي وأرقام)</label><input id="un" type="text" autocapitalize="none" autocomplete="username" placeholder="ahmed91">
+    <label for="pw">كلمة المرور (٦ أحرف على الأقل)</label><input id="pw" type="password" autocomplete="current-password">
+    <button class="btn" id="go">تسجيل الدخول</button>
+    <button class="link" id="sw">ليس لدي حساب – إنشاء حساب جديد</button>
+    <div class="msg" id="am"></div>
+  </div>
+</section>
+
+<!-- التطبيق -->
+<section id="app" class="hide">
+<header><div><h1>🛵 مسافات التوصيل</h1><div class="sub" id="who"></div></div><button class="out" id="out">خروج</button></header>
+<div class="tabs"><button id="t1" class="on">التوصيل</button><button id="t2">سجلي</button><button id="t3">🏆 المنافسة</button></div>
 
 <section id="v1">
   <div class="steps"><div class="step cur" id="s1">١ المطعم</div><div class="step" id="s2">٢ العميل</div><div class="step" id="s3">٣ تم الحفظ</div></div>
   <div class="card">
-    <label for="rn">اسم المطعم (اختياري)</label>
-    <input type="text" id="rn" placeholder="مثال: مطعم البيك">
+    <div id="rnBox"><label for="rn" style="margin-top:0">اسم المطعم (اختياري)</label><input type="text" id="rn" placeholder="مثال: مطعم البيك"></div>
     <button class="btn" id="b1">📍 وصلت للمطعم – حدد موقعي</button>
     <button class="btn g hide" id="b2">🏠 وصلت للعميل – احسب المسافة</button>
-    <button class="btn s hide" id="b3">إلغاء الطلب الحالي</button>
+    <button class="btn s hide" id="b3" style="margin-top:12px;width:100%">إلغاء الطلب الحالي</button>
     <div class="msg" id="msg"></div>
   </div>
   <div class="card big hide" id="res"><span class="sub">آخر مسافة مسجّلة</span><b id="rd">0</b><span class="sub" id="rm"></span></div>
@@ -81,81 +94,159 @@ input[type=text],input[type=date]{width:100%;padding:12px;border-radius:12px;bor
   <div class="range" id="range"><div><label for="df">من</label><input type="date" id="df"></div><div><label for="dt">إلى</label><input type="date" id="dt"></div></div>
   <div class="stats" id="stats"></div>
   <div class="card"><div class="sub">المسافة لكل طلب / يوم (كم)</div><div class="chart" id="chart"></div></div>
-  <div class="card"><div class="tools"><button class="btn s" id="csv" style="color:var(--pr)">⬇ تصدير CSV</button><button class="btn s" id="clr">🗑 مسح الكل</button></div><div id="list"></div></div>
+  <div class="card"><div class="tools"><button class="btn s" id="csv" style="color:var(--pr)">⬇ تصدير CSV</button><button class="btn s" id="clr">🗑 مسح سجلي</button></div><div id="list"></div></div>
+</section>
+
+<section id="v3" class="hide">
+  <div class="chips" id="lchips">
+    <button class="chip" data-p="today">اليوم</button><button class="chip" data-p="week">الأسبوع</button><button class="chip on" data-p="month">الشهر</button><button class="chip" data-p="all">الكل</button>
+  </div>
+  <div class="card" id="lb"></div>
+</section>
 </section>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 (function(){
-var OK='dl_orders',PK='dl_pending',mem={};
-function rd(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return k in mem?mem[k]:d}}
-function wr(k,v){mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+/* ===== الإعدادات: ضع مفتاح Publishable هنا (وليس المفتاح السري) ===== */
+var SUPABASE_URL='https://gttknezegiufgjzitgxk.supabase.co';
+var SUPABASE_KEY='sb_publishable_VnhzPA8HsPxIw_TxLu-H4w_hUGmRZMJ';
+/* ================================================================== */
+var sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 function $(i){return document.getElementById(i)}
-var orders=rd(OK,[]),pending=rd(PK,null),period='today';
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+var me=null,profile=null,orders=[],pending=null,period='today',lper='month',signup=false;
 
+/* ---------- الدخول ---------- */
+function am(t,c){var m=$('am');m.textContent=t;m.className='msg '+(c||'')}
+function mail(u){return u.toLowerCase()+'@mandoub.app'}
+$('sw').onclick=function(){signup=!signup;$('nmBox').classList.toggle('hide',!signup);$('go').textContent=signup?'إنشاء الحساب':'تسجيل الدخول';this.textContent=signup?'لدي حساب – تسجيل الدخول':'ليس لدي حساب – إنشاء حساب جديد';am('')};
+$('go').onclick=async function(){
+  var u=$('un').value.trim().toLowerCase(),p=$('pw').value,n=$('nm').value.trim();
+  if(!/^[a-z0-9_]{3,20}$/.test(u))return am('اسم المستخدم: ٣–٢٠ حرفاً إنجليزياً أو أرقاماً أو _','err');
+  if(p.length<6)return am('كلمة المرور قصيرة (٦ أحرف على الأقل)','err');
+  if(signup&&!n)return am('اكتب الاسم الظاهر','err');
+  this.disabled=true;am('');
+  try{
+    if(signup){
+      var r=await sb.auth.signUp({email:mail(u),password:p});
+      if(r.error)throw r.error;
+      if(!r.data.session)throw new Error('confirm');
+      var q=await sb.from('profiles').insert({id:r.data.user.id,username:u,display_name:n});
+      if(q.error)throw q.error;
+    }else{
+      var r2=await sb.auth.signInWithPassword({email:mail(u),password:p});
+      if(r2.error)throw r2.error;
+    }
+    await boot();
+  }catch(e){
+    var s=String(e.message||e);
+    am(s==='confirm'?'فعّل خيار تعطيل Confirm email في إعدادات Supabase Auth':/already|registered/i.test(s)?'اسم المستخدم مستخدم، اختر اسماً آخر':/Invalid login/i.test(s)?'اسم المستخدم أو كلمة المرور غير صحيحة':'خطأ: '+s,'err');
+  }
+  this.disabled=false;
+};
+$('out').onclick=async function(){await sb.auth.signOut();location.reload()};
+
+async function boot(){
+  var s=await sb.auth.getSession();
+  if(!s.data.session){$('auth').classList.remove('hide');$('app').classList.add('hide');return}
+  me=s.data.session.user;
+  var p=await sb.from('profiles').select('*').eq('id',me.id).maybeSingle();
+  profile=p.data||{display_name:me.email.split('@')[0],username:''};
+  $('who').textContent='مرحباً '+profile.display_name;
+  try{pending=JSON.parse(localStorage.getItem('dl_pending_'+me.id))}catch(e){pending=null}
+  $('auth').classList.add('hide');$('app').classList.remove('hide');
+  ui();await loadOrders();
+}
+async function loadOrders(){
+  var r=await sb.from('orders').select('*').order('t_end',{ascending:false}).limit(2000);
+  orders=(r.data||[]).map(function(o){return{id:o.id,restaurant:o.restaurant||'—',rLat:o.r_lat,rLng:o.r_lng,cLat:o.c_lat,cLng:o.c_lng,km:o.km,tStart:new Date(o.t_start).getTime(),tEnd:new Date(o.t_end).getTime()}});
+  render();
+}
+function setPending(v){pending=v;try{if(v)localStorage.setItem('dl_pending_'+me.id,JSON.stringify(v));else localStorage.removeItem('dl_pending_'+me.id)}catch(e){}}
+
+/* ---------- الموقع والمسافة ---------- */
 function pos(){return new Promise(function(res,rej){
   if(!navigator.geolocation)return rej({code:0});
   navigator.geolocation.getCurrentPosition(function(p){res({lat:p.coords.latitude,lng:p.coords.longitude,acc:Math.round(p.coords.accuracy)})},rej,{enableHighAccuracy:true,timeout:20000,maximumAge:0});
 })}
 function hav(a,b){var R=6371,r=Math.PI/180,dl=(b.lat-a.lat)*r,dn=(b.lng-a.lng)*r;
-  var x=Math.sin(dl/2)*Math.sin(dl/2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)*Math.sin(dn/2);
-  return 2*R*Math.asin(Math.sqrt(x))}
+  var x=Math.sin(dl/2)*Math.sin(dl/2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)*Math.sin(dn/2);return 2*R*Math.asin(Math.sqrt(x))}
 function fmt(km){return km<1?Math.round(km*1000)+' م':km.toFixed(2)+' كم'}
 function say(t,c){var m=$('msg');m.textContent=t;m.className='msg '+(c||'')}
-function err(e){say(e.code===1?'تم رفض إذن الموقع. فعّل الموقع للمتصفح ثم أعد المحاولة.':e.code===3?'انتهت مهلة تحديد الموقع، حاول في مكان مكشوف.':'تعذّر تحديد الموقع على هذا الجهاز.','err')}
+function err(e){say(e.code===1?'تم رفض إذن الموقع. فعّله للمتصفح ثم أعد المحاولة.':e.code===3?'انتهت مهلة تحديد الموقع، جرّب في مكان مكشوف.':'تعذّر تحديد الموقع: '+(e.message||''),'err')}
 function lock(b,on,t){b.disabled=on;if(t)b.textContent=t}
-
 function ui(){
   var p=!!pending;
-  $('b1').classList.toggle('hide',p);$('rn').parentNode.querySelector('label').classList.toggle('hide',p);$('rn').classList.toggle('hide',p);
-  $('b2').classList.toggle('hide',!p);$('b3').classList.toggle('hide',!p);
-  $('s1').className='step '+(p?'done':'cur');$('s2').className='step '+(p?'cur':'');
-  if(p)say('تم حفظ موقع المطعم'+(pending.name?' ('+pending.name+')':'')+' الساعة '+new Date(pending.t).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'})+'. اضغط الزر الثاني عند وصولك للعميل.','ok');
+  $('rnBox').classList.toggle('hide',p);$('b1').classList.toggle('hide',p);$('b2').classList.toggle('hide',!p);$('b3').classList.toggle('hide',!p);
+  $('s1').className='step '+(p?'done':'cur');$('s2').className='step '+(p?'cur':'');$('s3').className='step';
+  if(p)say('تم حفظ موقع المطعم'+(pending.name?' ('+pending.name+')':'')+'. اضغط الزر الثاني عند وصولك للعميل.','ok');else say('');
 }
 $('b1').onclick=function(){var b=this;lock(b,true,'جارٍ تحديد الموقع…');say('');
-  pos().then(function(p){pending={name:$('rn').value.trim(),lat:p.lat,lng:p.lng,acc:p.acc,t:Date.now()};wr(PK,pending);$('rn').value='';$('res').classList.add('hide');ui()}).catch(err).then(function(){lock(b,false,'📍 وصلت للمطعم – حدد موقعي')})};
+  pos().then(function(p){setPending({name:$('rn').value.trim(),lat:p.lat,lng:p.lng,acc:p.acc,t:Date.now()});$('rn').value='';$('res').classList.add('hide');ui()}).catch(err).then(function(){lock(b,false,'📍 وصلت للمطعم – حدد موقعي')})};
 $('b2').onclick=function(){var b=this;lock(b,true,'جارٍ حساب المسافة…');
-  pos().then(function(p){
-    var km=hav(pending,p),o={id:Date.now(),restaurant:pending.name||'—',rLat:pending.lat,rLng:pending.lng,cLat:p.lat,cLng:p.lng,km:km,tStart:pending.t,tEnd:Date.now(),acc:Math.max(pending.acc,p.acc)};
-    orders.unshift(o);wr(OK,orders);pending=null;wr(PK,null);
+  pos().then(async function(p){
+    var km=hav(pending,p),end=Date.now();
+    var r=await sb.from('orders').insert({restaurant:pending.name||null,r_lat:pending.lat,r_lng:pending.lng,c_lat:p.lat,c_lng:p.lng,km:km,t_start:new Date(pending.t).toISOString(),t_end:new Date(end).toISOString(),acc:Math.max(pending.acc,p.acc)});
+    if(r.error)throw r.error;
+    var mins=Math.max(1,Math.round((end-pending.t)/60000));
+    setPending(null);ui();
     $('s1').className='step done';$('s2').className='step done';$('s3').className='step done';
-    $('rd').textContent=fmt(km);$('rm').textContent='مدة التوصيل: '+Math.max(1,Math.round((o.tEnd-o.tStart)/60000))+' دقيقة';$('res').classList.remove('hide');
-    $('b2').classList.add('hide');$('b3').classList.add('hide');$('b1').classList.remove('hide');$('rn').classList.remove('hide');$('rn').parentNode.querySelector('label').classList.remove('hide');
-    say('تم حفظ الطلب في السجل ✔','ok');
+    $('rd').textContent=fmt(km);$('rm').textContent='مدة التوصيل: '+mins+' دقيقة';$('res').classList.remove('hide');
+    say('تم حفظ الطلب في السجل ✔','ok');loadOrders();
   }).catch(err).then(function(){lock(b,false,'🏠 وصلت للعميل – احسب المسافة')})};
-$('b3').onclick=function(){pending=null;wr(PK,null);say('');ui()};
+$('b3').onclick=function(){setPending(null);ui()};
 
-function range(){var n=new Date(),s=new Date(n.getFullYear(),n.getMonth(),n.getDate()),e=Date.now()+1;
-  if(period==='today')return[s.getTime(),e];
-  if(period==='week'){var d=(s.getDay()+1)%7;s.setDate(s.getDate()-d);return[s.getTime(),e]}
-  if(period==='month')return[new Date(n.getFullYear(),n.getMonth(),1).getTime(),e];
+/* ---------- السجل ---------- */
+function startOf(p){var n=new Date(),s=new Date(n.getFullYear(),n.getMonth(),n.getDate());
+  if(p==='week'){s.setDate(s.getDate()-(s.getDay()+1)%7);return s.getTime()}
+  if(p==='month')return new Date(n.getFullYear(),n.getMonth(),1).getTime();
+  if(p==='today')return s.getTime();return 0}
+function range(){var e=Date.now()+1;
   if(period==='custom'){var a=$('df').value,b=$('dt').value;return[a?new Date(a+'T00:00:00').getTime():0,b?new Date(b+'T23:59:59').getTime():e]}
-  return[0,e]}
-function dkey(t){var d=new Date(t);return d.toLocaleDateString('ar-SA',{day:'numeric',month:'numeric'})}
+  return[startOf(period),e]}
+function filtered(){var r=range();return orders.filter(function(o){return o.tEnd>=r[0]&&o.tEnd<=r[1]})}
+function dkey(t){return new Date(t).toLocaleDateString('ar-SA',{day:'numeric',month:'numeric'})}
 function render(){
-  var r=range(),f=orders.filter(function(o){return o.tEnd>=r[0]&&o.tEnd<=r[1]});
-  var tot=f.reduce(function(a,o){return a+o.km},0),n=f.length,ks=f.map(function(o){return o.km});
+  var f=filtered(),tot=f.reduce(function(a,o){return a+o.km},0),n=f.length,ks=f.map(function(o){return o.km});
   var st=[['عدد الطلبات',n],['إجمالي المسافة',n?fmt(tot):'—'],['المتوسط',n?fmt(tot/n):'—'],['الأبعد / الأقرب',n?fmt(Math.max.apply(0,ks))+' / '+fmt(Math.min.apply(0,ks)):'—']];
   $('stats').innerHTML=st.map(function(s){return'<div class="stat"><span>'+s[0]+'</span><b>'+s[1]+'</b></div>'}).join('');
-  // chart
-  var g=[];if(period==='today'){f.slice().reverse().forEach(function(o){g.push([new Date(o.tEnd).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'}),o.km])})}
+  var g=[];
+  if(period==='today'){f.slice().reverse().forEach(function(o){g.push([new Date(o.tEnd).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'}),o.km])})}
   else{var m={},ord=[];f.slice().reverse().forEach(function(o){var k=dkey(o.tEnd);if(!(k in m)){m[k]=0;ord.push(k)}m[k]+=o.km});g=ord.slice(-14).map(function(k){return[k,m[k]]})}
   var mx=Math.max.apply(0,g.map(function(x){return x[1]}).concat([0.001]));
   $('chart').innerHTML=g.length?g.map(function(x){return'<div class="col"><em>'+x[1].toFixed(1)+'</em><i style="height:'+Math.max(3,x[1]/mx*85)+'%"></i><small>'+x[0]+'</small></div>'}).join(''):'<div class="empty" style="width:100%">لا توجد بيانات</div>';
   $('list').innerHTML=f.length?f.map(function(o){var d=new Date(o.tEnd);
-    return'<div class="row"><div><div><b>'+esc(o.restaurant)+'</b></div><div class="m">'+d.toLocaleDateString('ar-SA',{weekday:'short',day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'})+' · '+Math.max(1,Math.round((o.tEnd-o.tStart)/60000))+' د</div></div><div class="d">'+fmt(o.km)+'</div><button data-id="'+o.id+'" aria-label="حذف">✕</button></div>'}).join(''):'<div class="empty">لا توجد سجلات في هذه الفترة</div>';
+    return'<div class="row"><div><b>'+esc(o.restaurant)+'</b><div class="m">'+d.toLocaleDateString('ar-SA',{weekday:'short',day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'})+' · '+Math.max(1,Math.round((o.tEnd-o.tStart)/60000))+' د</div></div><div class="d">'+fmt(o.km)+'</div><button data-id="'+o.id+'" aria-label="حذف">✕</button></div>'}).join(''):'<div class="empty">لا توجد سجلات في هذه الفترة</div>';
 }
-function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 $('chips').onclick=function(e){var p=e.target.dataset.p;if(!p)return;period=p;[].forEach.call(this.children,function(c){c.classList.toggle('on',c===e.target)});$('range').classList.toggle('show',p==='custom');render()};
 $('df').onchange=$('dt').onchange=render;
-$('list').onclick=function(e){var id=e.target.dataset.id;if(!id||!confirm('حذف هذا السجل؟'))return;orders=orders.filter(function(o){return String(o.id)!==id});wr(OK,orders);render()};
-$('clr').onclick=function(){if(orders.length&&confirm('مسح كل السجلات نهائياً؟')){orders=[];wr(OK,orders);render()}};
-$('csv').onclick=function(){var r=range(),f=orders.filter(function(o){return o.tEnd>=r[0]&&o.tEnd<=r[1]});if(!f.length)return;
+$('list').onclick=async function(e){var id=e.target.dataset.id;if(!id||!confirm('حذف هذا السجل؟'))return;await sb.from('orders').delete().eq('id',id);loadOrders()};
+$('clr').onclick=async function(){if(orders.length&&confirm('مسح كل سجلاتك نهائياً؟')){await sb.from('orders').delete().eq('user_id',me.id);loadOrders()}};
+$('csv').onclick=function(){var f=filtered();if(!f.length)return;
   var L=['المطعم,التاريخ,المسافة (كم),مدة (دقيقة),خط عرض المطعم,خط طول المطعم,خط عرض العميل,خط طول العميل'].concat(f.map(function(o){return[JSON.stringify(o.restaurant),new Date(o.tEnd).toISOString(),o.km.toFixed(3),Math.round((o.tEnd-o.tStart)/60000),o.rLat,o.rLng,o.cLat,o.cLng].join(',')}));
   var a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+L.join('\n')],{type:'text/csv'}));a.download='orders.csv';a.click()};
-function tab(n){$('v1').classList.toggle('hide',n!==1);$('v2').classList.toggle('hide',n!==2);$('t1').classList.toggle('on',n===1);$('t2').classList.toggle('on',n===2);if(n===2)render()}
-$('t1').onclick=function(){tab(1)};$('t2').onclick=function(){tab(2)};
-ui();
+
+/* ---------- المنافسة ---------- */
+async function loadBoard(){
+  $('lb').innerHTML='<div class="empty">جارٍ التحميل…</div>';
+  var s=startOf(lper),r=await sb.rpc('leaderboard',{p_from:s?new Date(s).toISOString():null});
+  if(r.error){$('lb').innerHTML='<div class="empty">تعذّر التحميل: '+esc(r.error.message)+'</div>';return}
+  var d=r.data||[];if(!d.length){$('lb').innerHTML='<div class="empty">لا يوجد مناديب بعد</div>';return}
+  var mo=Math.max.apply(0,d.map(function(x){return x.orders_count}).concat([1])),mk=Math.max.apply(0,d.map(function(x){return x.total_km}).concat([0.001])),med=['🥇','🥈','🥉'];
+  $('lb').innerHTML=d.map(function(x,i){
+    return'<div class="lb'+(x.user_id===me.id?' me':'')+'"><div class="lbh"><span>'+(med[i]||(i+1)+'.')+' '+esc(x.display_name)+(x.user_id===me.id?' (أنت)':'')+'</span><span>'+fmt(x.total_km)+'</span></div>'
+    +'<div class="bar"><span>الطلبات</span><div><i style="width:'+x.orders_count/mo*100+'%;background:var(--ok)"></i></div><b>'+x.orders_count+' طلب</b></div>'
+    +'<div class="bar"><span>الكيلومترات</span><div><i style="width:'+x.total_km/mk*100+'%;background:var(--pr)"></i></div><b>'+x.total_km.toFixed(1)+' كم</b></div></div>'}).join('');
+}
+$('lchips').onclick=function(e){var p=e.target.dataset.p;if(!p)return;lper=p;[].forEach.call(this.children,function(c){c.classList.toggle('on',c===e.target)});loadBoard()};
+
+/* ---------- التبويبات ---------- */
+function tab(n){for(var i=1;i<=3;i++){$('v'+i).classList.toggle('hide',i!==n);$('t'+i).classList.toggle('on',i===n)}if(n===2)loadOrders();if(n===3)loadBoard()}
+$('t1').onclick=function(){tab(1)};$('t2').onclick=function(){tab(2)};$('t3').onclick=function(){tab(3)};
+
+boot().catch(function(){$('auth').classList.remove('hide')});
 })();
 </script>
 </body>
