@@ -104,7 +104,7 @@ details summary{padding:4px 0}
   <div class="chips" id="lchips">
     <button class="chip" data-p="today">اليوم</button><button class="chip" data-p="week">الأسبوع</button><button class="chip on" data-p="month">الشهر</button><button class="chip" data-p="all">الكل</button>
   </div>
-  <div class="sub" style="margin-bottom:8px">تظهر لك إحصائياتك وإحصائيات من منحتك الإدارة صلاحية رؤيتهم.</div>
+  <div class="sub" style="margin-bottom:8px">ترى ترتيب الجميع، وأرقام الطلبات والكيلومترات تظهر لك لمن منحتك الإدارة صلاحية رؤيتهم فقط 🔒</div>
   <div class="card" id="lb"></div>
 </section>
 
@@ -124,6 +124,7 @@ details summary{padding:4px 0}
 var SUPABASE_URL='https://gttknezegiufgjzitgxk.supabase.co';
 var SUPABASE_KEY='sb_publishable_VnhzPA8HsPxIw_TxLu-H4w_hUGmRZMJ';
 /* ================================================================== */
+if(/[^\x20-\x7E]/.test(SUPABASE_KEY)){document.body.innerHTML='<div style="padding:24px;font-family:sans-serif;direction:rtl;text-align:center;line-height:1.8"><h2>⚠ لم يتم وضع مفتاح Supabase</h2><p>افتح ملف index.html وضع مفتاح Publishable مكان النص العربي في السطر SUPABASE_KEY.</p></div>';return}
 var sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -247,11 +248,12 @@ async function loadBoard(){
   var s=startOf(lper),r=await sb.rpc('leaderboard',{p_from:s?new Date(s).toISOString():null});
   if(r.error){$('lb').innerHTML='<div class="empty">تعذّر التحميل: '+esc(r.error.message)+'</div>';return}
   var d=r.data||[];if(!d.length){$('lb').innerHTML='<div class="empty">لا يوجد مناديب بعد</div>';return}
-  var mo=Math.max.apply(0,d.map(function(x){return x.orders_count}).concat([1])),mk=Math.max.apply(0,d.map(function(x){return x.total_km}).concat([0.001])),med=['🥇','🥈','🥉'];
-  $('lb').innerHTML=d.map(function(x,i){
-    return'<div class="lb'+(x.user_id===me.id?' me':'')+'"><div class="lbh"><span>'+(med[i]||(i+1)+'.')+' '+esc(x.display_name)+(x.user_id===me.id?' (أنت)':'')+'</span><span>'+fmt(x.total_km)+'</span></div>'
-    +'<div class="bar"><span>الطلبات</span><div><i style="width:'+x.orders_count/mo*100+'%;background:var(--ok)"></i></div><b>'+x.orders_count+' طلب</b></div>'
-    +'<div class="bar"><span>الكيلومترات</span><div><i style="width:'+x.total_km/mk*100+'%;background:var(--pr)"></i></div><b>'+x.total_km.toFixed(1)+' كم</b></div></div>'}).join('');
+  var V=d.filter(function(x){return x.can_see}),mo=Math.max.apply(0,V.map(function(x){return x.orders_count}).concat([1])),mk=Math.max.apply(0,V.map(function(x){return x.total_km}).concat([0.001])),med=['🥇','🥈','🥉'];
+  $('lb').innerHTML=d.map(function(x){
+    var h='<div class="lb'+(x.user_id===me.id?' me':'')+'"><div class="lbh"><span>'+(med[x.rank-1]||x.rank+'.')+' '+esc(x.display_name)+(x.user_id===me.id?' (أنت)':'')+'</span><span>'+(x.can_see?fmt(x.total_km):'🔒')+'</span></div>';
+    if(x.can_see)h+='<div class="bar"><span>الطلبات</span><div><i style="width:'+x.orders_count/mo*100+'%;background:var(--ok)"></i></div><b>'+x.orders_count+' طلب</b></div>'
+    +'<div class="bar"><span>الكيلومترات</span><div><i style="width:'+x.total_km/mk*100+'%;background:var(--pr)"></i></div><b>'+x.total_km.toFixed(1)+' كم</b></div>';
+    return h+'</div>'}).join('');
 }
 $('lchips').onclick=function(e){var p=e.target.dataset.p;if(!p)return;lper=p;[].forEach.call(this.children,function(c){c.classList.toggle('on',c===e.target)});loadBoard()};
 
