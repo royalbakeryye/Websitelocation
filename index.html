@@ -55,6 +55,7 @@ input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--bd);back
 .badge{background:var(--pr);color:#fff;border-radius:8px;padding:1px 8px;font-size:11px}.badge.off{background:var(--wr)}
 .ck{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:14px;color:var(--tx)}.ck input{width:auto}
 details summary{padding:4px 0}
+.m a{color:var(--pr);text-decoration:none;font-weight:600}
 </style>
 </head>
 <body>
@@ -84,7 +85,9 @@ details summary{padding:4px 0}
     <div id="rnBox"><label for="rn" style="margin-top:0">اسم المطعم (اختياري)</label><input type="text" id="rn" placeholder="مثال: مطعم البيك"></div>
     <button class="btn" id="b1">📍 وصلت للمطعم – حدد موقعي</button>
     <button class="btn g hide" id="b2">🏠 وصلت للعميل – احسب المسافة</button>
-    <button class="btn s hide" id="b3" style="margin-top:12px;width:100%">إلغاء الطلب الحالي</button>
+    <button class="btn g hide" id="b2b">🏠 وصلت للعميل ٢</button>
+    <label class="ck" id="twoBox" style="margin-top:12px"><input type="checkbox" id="two"> يوجد طلب آخر من نفس المتجر (عميلان)</label>
+    <button class="btn s hide" id="b3" style="margin-top:6px;width:100%">إلغاء الطلب الحالي</button>
     <div class="msg" id="msg"></div>
   </div>
   <div class="card big hide" id="res"><span class="sub">آخر مسافة مسجّلة</span><b id="rd">0</b><span class="sub" id="rm"></span></div>
@@ -191,26 +194,38 @@ function fmt(km){return km<1?Math.round(km*1000)+' م':km.toFixed(2)+' كم'}
 function say(t,c){var m=$('msg');m.textContent=t;m.className='msg '+(c||'')}
 function err(e){say(e.code===1?'تم رفض إذن الموقع. فعّله للمتصفح ثم أعد المحاولة.':e.code===3?'انتهت مهلة تحديد الموقع، جرّب في مكان مكشوف.':'تعذّر تحديد الموقع: '+(e.message||''),'err')}
 function lock(b,on,t){b.disabled=on;if(t)b.textContent=t}
+function lab(i){return pending.n===2?'🏠 وصلت للعميل '+(i+1):'🏠 وصلت للعميل – احسب المسافة'}
 function ui(){
-  var p=!!pending;
-  $('rnBox').classList.toggle('hide',p);$('b1').classList.toggle('hide',p);$('b2').classList.toggle('hide',!p);$('b3').classList.toggle('hide',!p);
+  if(pending&&!pending.done){pending.n=pending.n||1;pending.done=[null,null]}
+  var p=!!pending,two=p&&pending.n===2,dn=p?pending.done.filter(function(x){return x!=null}).length:0;
+  $('rnBox').classList.toggle('hide',p);$('b1').classList.toggle('hide',p);$('b2').classList.toggle('hide',!p);$('b2b').classList.toggle('hide',!two);$('b3').classList.toggle('hide',!p);
+  $('twoBox').classList.toggle('hide',dn>0);
+  if(p){$('two').checked=two;['b2','b2b'].forEach(function(id,i){var d=pending.done[i];$(id).disabled=d!=null;$(id).textContent=d!=null?'✔ العميل '+(i+1)+' – '+fmt(d):lab(i)})}
   $('s1').className='step '+(p?'done':'cur');$('s2').className='step '+(p?'cur':'');$('s3').className='step';
-  if(p)say('تم حفظ موقع المطعم'+(pending.name?' ('+pending.name+')':'')+'. اضغط الزر الثاني عند وصولك للعميل.','ok');else say('');
+  if(p)say('تم حفظ موقع المطعم'+(pending.name?' ('+pending.name+')':'')+(two?'. اضغط زر كل عميل عند وصولك إليه.':'. اضغط الزر الثاني عند وصولك للعميل.'),'ok');else say('');
 }
+$('two').onchange=function(){if(pending&&pending.done.every(function(x){return x==null})){pending.n=this.checked?2:1;setPending(pending);ui()}};
 $('b1').onclick=function(){var b=this;lock(b,true,'جارٍ تحديد الموقع…');say('');
-  pos().then(function(p){setPending({name:$('rn').value.trim(),lat:p.lat,lng:p.lng,acc:p.acc,t:Date.now()});$('rn').value='';$('res').classList.add('hide');ui()}).catch(err).then(function(){lock(b,false,'📍 وصلت للمطعم – حدد موقعي')})};
-$('b2').onclick=function(){var b=this;lock(b,true,'جارٍ حساب المسافة…');
+  pos().then(function(p){setPending({name:$('rn').value.trim(),lat:p.lat,lng:p.lng,acc:p.acc,t:Date.now(),n:$('two').checked?2:1,done:[null,null]});$('rn').value='';$('res').classList.add('hide');ui()}).catch(err).then(function(){lock(b,false,'📍 وصلت للمطعم – حدد موقعي')})};
+function cust(i){return function(){var b=this;lock(b,true,'جارٍ حساب المسافة…');
   pos().then(async function(p){
     var km=hav(pending,p),end=Date.now();
     var r=await sb.from('orders').insert({restaurant:pending.name||null,r_lat:pending.lat,r_lng:pending.lng,c_lat:p.lat,c_lng:p.lng,km:km,t_start:new Date(pending.t).toISOString(),t_end:new Date(end).toISOString(),acc:Math.max(pending.acc,p.acc)});
     if(r.error)throw r.error;
-    var mins=Math.max(1,Math.round((end-pending.t)/60000));
-    setPending(null);ui();
-    $('s1').className='step done';$('s2').className='step done';$('s3').className='step done';
-    $('rd').textContent=fmt(km);$('rm').textContent='مدة التوصيل: '+mins+' دقيقة';$('res').classList.remove('hide');
-    say('تم حفظ الطلب في السجل ✔','ok');loadOrders();
-  }).catch(err).then(function(){lock(b,false,'🏠 وصلت للعميل – احسب المسافة')})};
-$('b3').onclick=function(){setPending(null);ui()};
+    pending.done[i]=km;
+    var ds=pending.done.slice(0,pending.n);
+    if(ds.every(function(x){return x!=null})){
+      var mins=Math.max(1,Math.round((end-pending.t)/60000));
+      setPending(null);ui();$('two').checked=false;
+      $('s1').className='step done';$('s2').className='step done';$('s3').className='step done';
+      $('rd').style.fontSize=ds.length>1?'28px':'';$('rd').textContent=ds.map(fmt).join(' · ');
+      $('rm').textContent=(ds.length>1?'العميل ١ · العميل ٢ — ':'')+'مدة التوصيل: '+mins+' دقيقة';$('res').classList.remove('hide');
+      say(ds.length>1?'تم حفظ الطلبين في السجل ✔':'تم حفظ الطلب في السجل ✔','ok');
+    }else{setPending(pending);ui();say('تم حفظ الطلب الأول ✔ — اضغط زر العميل الآخر عند وصولك إليه.','ok')}
+    loadOrders();
+  }).catch(err).then(function(){b.disabled=false;if(pending)ui()})}}
+$('b2').onclick=cust(0);$('b2b').onclick=cust(1);
+$('b3').onclick=function(){setPending(null);$('two').checked=false;ui()};
 
 /* ---------- السجل ---------- */
 function startOf(p){var n=new Date(),s=new Date(n.getFullYear(),n.getMonth(),n.getDate());
@@ -275,6 +290,13 @@ async function loadAdmin(){
     +'<details><summary class="sub" style="cursor:pointer">صلاحيات المشاهدة</summary><div style="margin-top:8px">'+perm+'</div></details><div class="recs"></div></div>'}).join('');
   a.innerHTML=h;
 }
+function mapLinks(o){
+  function ok(a,b){return typeof a==='number'&&typeof b==='number'}
+  var G='https://www.google.com/maps',h=[];
+  if(ok(o.r_lat,o.r_lng))h.push('<a href="'+G+'?q='+o.r_lat+','+o.r_lng+'" target="_blank" rel="noopener">🏪 المتجر</a>');
+  if(ok(o.c_lat,o.c_lng))h.push('<a href="'+G+'?q='+o.c_lat+','+o.c_lng+'" target="_blank" rel="noopener">🏠 العميل</a>');
+  if(ok(o.r_lat,o.r_lng)&&ok(o.c_lat,o.c_lng))h.push('<a href="'+G+'/dir/?api=1&origin='+o.r_lat+','+o.r_lng+'&destination='+o.c_lat+','+o.c_lng+'&travelmode=driving" target="_blank" rel="noopener">🧭 المسار</a>');
+  return h.length?'<div class="m">'+h.join(' · ')+'</div>':''}
 $('adm').onclick=async function(e){
   var act=e.target.dataset.act;if(!act)return;
   var card=e.target.closest('[data-id]'),id=card&&card.dataset.id,p=AP.find(function(x){return x.id===id});
@@ -284,7 +306,7 @@ $('adm').onclick=async function(e){
   if(act==='tg'){if(confirm((p.active?'إيقاف':'تفعيل')+' حساب '+p.display_name+'؟')){await sb.from('profiles').update({active:!p.active}).eq('id',id);loadAdmin()}return}
   if(act==='rec'){var box=card.querySelector('.recs');box.innerHTML='<div class="empty">جارٍ التحميل…</div>';
     var r=await sb.from('orders').select('*').eq('user_id',id).order('t_end',{ascending:false}).limit(50),d=r.data||[];
-    box.innerHTML=d.length?d.map(function(o){var t=new Date(o.t_end);return'<div class="row"><div><b>'+esc(o.restaurant||'—')+'</b><div class="m">'+t.toLocaleDateString('ar-SA',{day:'numeric',month:'short'})+' · '+t.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'})+'</div></div><div class="d">'+fmt(o.km)+'</div><button data-act="del" data-oid="'+o.id+'" aria-label="حذف">✕</button></div>'}).join(''):'<div class="empty">لا توجد سجلات</div>';return}
+    box.innerHTML=d.length?d.map(function(o){var t=new Date(o.t_end);return'<div class="row"><div><b>'+esc(o.restaurant||'—')+'</b><div class="m">'+t.toLocaleDateString('ar-SA',{day:'numeric',month:'short'})+' · '+t.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'})+'</div>'+mapLinks(o)+'</div><div class="d">'+fmt(o.km)+'</div><button data-act="del" data-oid="'+o.id+'" aria-label="حذف">✕</button></div>'}).join(''):'<div class="empty">لا توجد سجلات</div>';return}
   if(act==='del'&&confirm('حذف هذا الطلب؟')){await sb.from('orders').delete().eq('id',e.target.dataset.oid);e.target.closest('.row').remove()}
 };
 $('adm').onchange=async function(e){var t=e.target,v=t.dataset.v;if(!v)return;
