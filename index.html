@@ -56,6 +56,7 @@ input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--bd);back
 .ck{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:14px;color:var(--tx)}.ck input{width:auto}
 details summary{padding:4px 0}
 .m a{color:var(--pr);text-decoration:none;font-weight:600}
+.tools .btn{width:auto;flex:1 1 30%;padding:10px 6px;font-size:13px}
 </style>
 </head>
 <body>
@@ -280,13 +281,13 @@ async function loadAdmin(){
   var R=await Promise.all([sb.from('profiles').select('*').order('created_at'),sb.from('stats_access').select('*'),sb.rpc('leaderboard',{p_from:s?new Date(s).toISOString():null})]);
   if(R[0].error){a.innerHTML='<div class="card empty">'+esc(R[0].error.message)+'</div>';return}
   AP=R[0].data;AC={};(R[1].data||[]).forEach(function(x){(AC[x.viewer_id]=AC[x.viewer_id]||{})[x.target_id]=1});
-  var S={},to=0,tk=0;(R[2].data||[]).forEach(function(x){S[x.user_id]=x;to+=x.orders_count;tk+=x.total_km});
+  var isSuper=profile.username==='maaz',S={},to=0,tk=0;(R[2].data||[]).forEach(function(x){S[x.user_id]=x;to+=x.orders_count;tk+=x.total_km});
   var h='<div class="stats"><div class="stat"><span>المناديب</span><b>'+AP.length+'</b></div><div class="stat"><span>الطلبات</span><b>'+to+'</b></div><div class="stat" style="grid-column:span 2"><span>إجمالي الكيلومترات</span><b>'+tk.toFixed(1)+' كم</b></div></div>';
   h+='<div class="tools" style="margin-bottom:12px"><button class="btn s" data-act="all" style="color:var(--ok)">👁 الكل يرى الكل</button><button class="btn s" data-act="none">🚫 كلٌّ يرى نفسه فقط</button></div>';
   h+=AP.map(function(p){var x=S[p.id]||{orders_count:0,total_km:0};
     var perm=p.is_admin?'<div class="sub">المدير يرى كل الإحصائيات تلقائياً</div>':'<div class="sub" style="margin-bottom:6px">يستطيع رؤية إحصائيات:</div>'+(AP.length>1?AP.filter(function(t){return t.id!==p.id}).map(function(t){return'<label class="ck"><input type="checkbox" data-v="'+p.id+'" data-t="'+t.id+'"'+((AC[p.id]||{})[t.id]?' checked':'')+'> '+esc(t.display_name)+'</label>'}).join(''):'');
-    return'<div class="card" data-id="'+p.id+'"><div class="lbh"><span>'+esc(p.display_name)+' <span class="sub">@'+esc(p.username)+'</span> '+(p.is_admin?'<span class="badge">مدير</span>':'')+(p.active?'':'<span class="badge off">موقوف</span>')+'</span><span>'+x.orders_count+' طلب · '+x.total_km.toFixed(1)+' كم</span></div>'
-    +'<div class="tools" style="margin:10px 0"><button class="btn s" data-act="ren">✎ الاسم</button><button class="btn s" data-act="rec">📋 السجل</button>'+(p.is_admin?'':'<button class="btn s" data-act="tg">'+(p.active?'⏸ إيقاف':'▶ تفعيل')+'</button>')+'</div>'
+    return'<div class="card" data-id="'+p.id+'"><div class="lbh"><span>'+esc(p.display_name)+' <span class="sub">@'+esc(p.username)+'</span> '+(p.is_admin?'<span class="badge">'+(p.username==='maaz'?'المدير الأساسي':'مدير')+'</span> ':'')+(p.active?'':'<span class="badge off">موقوف</span>')+'</span><span>'+x.orders_count+' طلب · '+x.total_km.toFixed(1)+' كم</span></div>'
+    +'<div class="tools" style="margin:10px 0;flex-wrap:wrap">'+((!p.is_admin||isSuper||p.id===me.id)?'<button class="btn s" data-act="ren">✎ الاسم</button>':'')+'<button class="btn s" data-act="rec">📋 السجل</button>'+((!p.is_admin||(isSuper&&p.username!=='maaz'))?'<button class="btn s" data-act="tg">'+(p.active?'⏸ إيقاف':'▶ تفعيل')+'</button>':'')+((isSuper&&p.username!=='maaz')?'<button class="btn s" data-act="adm" style="color:var(--pr)">'+(p.is_admin?'⬇ إزالة الإدارة':'⬆ ترقية لمدير')+'</button>':'')+'</div>'
     +'<details><summary class="sub" style="cursor:pointer">صلاحيات المشاهدة</summary><div style="margin-top:8px">'+perm+'</div></details><div class="recs"></div></div>'}).join('');
   a.innerHTML=h;
 }
@@ -303,6 +304,7 @@ $('adm').onclick=async function(e){
   if(act==='all'){var pr=[];AP.forEach(function(v){if(!v.is_admin)AP.forEach(function(t){if(t.id!==v.id)pr.push({viewer_id:v.id,target_id:t.id})})});if(pr.length)await sb.from('stats_access').upsert(pr);return loadAdmin()}
   if(act==='none'){if(confirm('إلغاء كل صلاحيات المشاهدة؟')){await sb.from('stats_access').delete().not('viewer_id','is',null);loadAdmin()}return}
   if(act==='ren'){var n=prompt('الاسم الجديد',p.display_name);if(n&&n.trim()){await sb.from('profiles').update({display_name:n.trim()}).eq('id',id);loadAdmin()}return}
+  if(act==='adm'){if(confirm((p.is_admin?'إزالة صلاحية الإدارة من ':'ترقية ')+p.display_name+(p.is_admin?'؟':' إلى مدير؟'))){var u=await sb.from('profiles').update({is_admin:!p.is_admin}).eq('id',id);if(u.error)alert('تعذّر الحفظ: '+u.error.message);loadAdmin()}return}
   if(act==='tg'){if(confirm((p.active?'إيقاف':'تفعيل')+' حساب '+p.display_name+'؟')){await sb.from('profiles').update({active:!p.active}).eq('id',id);loadAdmin()}return}
   if(act==='rec'){var box=card.querySelector('.recs');box.innerHTML='<div class="empty">جارٍ التحميل…</div>';
     var r=await sb.from('orders').select('*').eq('user_id',id).order('t_end',{ascending:false}).limit(50),d=r.data||[];
