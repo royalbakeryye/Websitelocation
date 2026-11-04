@@ -52,6 +52,9 @@ input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--bd);back
 .bar i{display:block;height:100%;border-radius:6px}.bar b{width:62px;flex:none;color:var(--tx);text-align:start}
 .link{background:none;border:0;color:var(--pr);font:inherit;cursor:pointer;margin-top:12px;width:100%}
 .out{border:1px solid var(--bd);background:none;color:var(--mut);border-radius:10px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.badge{background:var(--pr);color:#fff;border-radius:8px;padding:1px 8px;font-size:11px}.badge.off{background:var(--wr)}
+.ck{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:14px;color:var(--tx)}.ck input{width:auto}
+details summary{padding:4px 0}
 </style>
 </head>
 <body>
@@ -73,7 +76,7 @@ input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--bd);back
 <!-- التطبيق -->
 <section id="app" class="hide">
 <header><div><h1>🛵 مسافات التوصيل</h1><div class="sub" id="who"></div></div><button class="out" id="out">خروج</button></header>
-<div class="tabs"><button id="t1" class="on">التوصيل</button><button id="t2">سجلي</button><button id="t3">🏆 المنافسة</button></div>
+<div class="tabs"><button id="t1" class="on">التوصيل</button><button id="t2">سجلي</button><button id="t3">🏆 المنافسة</button><button id="t4" class="hide">⚙ الإدارة</button></div>
 
 <section id="v1">
   <div class="steps"><div class="step cur" id="s1">١ المطعم</div><div class="step" id="s2">٢ العميل</div><div class="step" id="s3">٣ تم الحفظ</div></div>
@@ -101,7 +104,15 @@ input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--bd);back
   <div class="chips" id="lchips">
     <button class="chip" data-p="today">اليوم</button><button class="chip" data-p="week">الأسبوع</button><button class="chip on" data-p="month">الشهر</button><button class="chip" data-p="all">الكل</button>
   </div>
+  <div class="sub" style="margin-bottom:8px">تظهر لك إحصائياتك وإحصائيات من منحتك الإدارة صلاحية رؤيتهم.</div>
   <div class="card" id="lb"></div>
+</section>
+
+<section id="v4" class="hide">
+  <div class="chips" id="achips">
+    <button class="chip" data-p="today">اليوم</button><button class="chip" data-p="week">الأسبوع</button><button class="chip on" data-p="month">الشهر</button><button class="chip" data-p="all">الكل</button>
+  </div>
+  <div id="adm"></div>
 </section>
 </section>
 </div>
@@ -111,7 +122,7 @@ input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--bd);back
 (function(){
 /* ===== الإعدادات: ضع مفتاح Publishable هنا (وليس المفتاح السري) ===== */
 var SUPABASE_URL='https://gttknezegiufgjzitgxk.supabase.co';
-var SUPABASE_KEY='sb_publishable_VnhzPA8HsPxIw_TxLu-H4w_hUGmRZMJ';
+var SUPABASE_KEY='ضع_مفتاح_PUBLISHABLE_هنا';
 /* ================================================================== */
 var sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 function $(i){return document.getElementById(i)}
@@ -154,7 +165,9 @@ async function boot(){
   me=s.data.session.user;
   var p=await sb.from('profiles').select('*').eq('id',me.id).maybeSingle();
   profile=p.data||{display_name:me.email.split('@')[0],username:''};
-  $('who').textContent='مرحباً '+profile.display_name;
+  if(profile.active===false){await sb.auth.signOut();$('auth').classList.remove('hide');$('app').classList.add('hide');am('هذا الحساب موقوف. تواصل مع الإدارة.','err');return}
+  $('t4').classList.toggle('hide',!profile.is_admin);
+  $('who').textContent='مرحباً '+profile.display_name+(profile.is_admin?' (مدير)':'');
   try{pending=JSON.parse(localStorage.getItem('dl_pending_'+me.id))}catch(e){pending=null}
   $('auth').classList.add('hide');$('app').classList.remove('hide');
   ui();await loadOrders();
@@ -243,8 +256,43 @@ async function loadBoard(){
 $('lchips').onclick=function(e){var p=e.target.dataset.p;if(!p)return;lper=p;[].forEach.call(this.children,function(c){c.classList.toggle('on',c===e.target)});loadBoard()};
 
 /* ---------- التبويبات ---------- */
-function tab(n){for(var i=1;i<=3;i++){$('v'+i).classList.toggle('hide',i!==n);$('t'+i).classList.toggle('on',i===n)}if(n===2)loadOrders();if(n===3)loadBoard()}
-$('t1').onclick=function(){tab(1)};$('t2').onclick=function(){tab(2)};$('t3').onclick=function(){tab(3)};
+/* ---------- لوحة الإدارة ---------- */
+var aper='month',AP=[],AC={};
+async function loadAdmin(){
+  var s=startOf(aper),a=$('adm');a.innerHTML='<div class="card empty">جارٍ التحميل…</div>';
+  var R=await Promise.all([sb.from('profiles').select('*').order('created_at'),sb.from('stats_access').select('*'),sb.rpc('leaderboard',{p_from:s?new Date(s).toISOString():null})]);
+  if(R[0].error){a.innerHTML='<div class="card empty">'+esc(R[0].error.message)+'</div>';return}
+  AP=R[0].data;AC={};(R[1].data||[]).forEach(function(x){(AC[x.viewer_id]=AC[x.viewer_id]||{})[x.target_id]=1});
+  var S={},to=0,tk=0;(R[2].data||[]).forEach(function(x){S[x.user_id]=x;to+=x.orders_count;tk+=x.total_km});
+  var h='<div class="stats"><div class="stat"><span>المناديب</span><b>'+AP.length+'</b></div><div class="stat"><span>الطلبات</span><b>'+to+'</b></div><div class="stat" style="grid-column:span 2"><span>إجمالي الكيلومترات</span><b>'+tk.toFixed(1)+' كم</b></div></div>';
+  h+='<div class="tools" style="margin-bottom:12px"><button class="btn s" data-act="all" style="color:var(--ok)">👁 الكل يرى الكل</button><button class="btn s" data-act="none">🚫 كلٌّ يرى نفسه فقط</button></div>';
+  h+=AP.map(function(p){var x=S[p.id]||{orders_count:0,total_km:0};
+    var perm=p.is_admin?'<div class="sub">المدير يرى كل الإحصائيات تلقائياً</div>':'<div class="sub" style="margin-bottom:6px">يستطيع رؤية إحصائيات:</div>'+(AP.length>1?AP.filter(function(t){return t.id!==p.id}).map(function(t){return'<label class="ck"><input type="checkbox" data-v="'+p.id+'" data-t="'+t.id+'"'+((AC[p.id]||{})[t.id]?' checked':'')+'> '+esc(t.display_name)+'</label>'}).join(''):'');
+    return'<div class="card" data-id="'+p.id+'"><div class="lbh"><span>'+esc(p.display_name)+' <span class="sub">@'+esc(p.username)+'</span> '+(p.is_admin?'<span class="badge">مدير</span>':'')+(p.active?'':'<span class="badge off">موقوف</span>')+'</span><span>'+x.orders_count+' طلب · '+x.total_km.toFixed(1)+' كم</span></div>'
+    +'<div class="tools" style="margin:10px 0"><button class="btn s" data-act="ren">✎ الاسم</button><button class="btn s" data-act="rec">📋 السجل</button>'+(p.is_admin?'':'<button class="btn s" data-act="tg">'+(p.active?'⏸ إيقاف':'▶ تفعيل')+'</button>')+'</div>'
+    +'<details><summary class="sub" style="cursor:pointer">صلاحيات المشاهدة</summary><div style="margin-top:8px">'+perm+'</div></details><div class="recs"></div></div>'}).join('');
+  a.innerHTML=h;
+}
+$('adm').onclick=async function(e){
+  var act=e.target.dataset.act;if(!act)return;
+  var card=e.target.closest('[data-id]'),id=card&&card.dataset.id,p=AP.find(function(x){return x.id===id});
+  if(act==='all'){var pr=[];AP.forEach(function(v){if(!v.is_admin)AP.forEach(function(t){if(t.id!==v.id)pr.push({viewer_id:v.id,target_id:t.id})})});if(pr.length)await sb.from('stats_access').upsert(pr);return loadAdmin()}
+  if(act==='none'){if(confirm('إلغاء كل صلاحيات المشاهدة؟')){await sb.from('stats_access').delete().not('viewer_id','is',null);loadAdmin()}return}
+  if(act==='ren'){var n=prompt('الاسم الجديد',p.display_name);if(n&&n.trim()){await sb.from('profiles').update({display_name:n.trim()}).eq('id',id);loadAdmin()}return}
+  if(act==='tg'){if(confirm((p.active?'إيقاف':'تفعيل')+' حساب '+p.display_name+'؟')){await sb.from('profiles').update({active:!p.active}).eq('id',id);loadAdmin()}return}
+  if(act==='rec'){var box=card.querySelector('.recs');box.innerHTML='<div class="empty">جارٍ التحميل…</div>';
+    var r=await sb.from('orders').select('*').eq('user_id',id).order('t_end',{ascending:false}).limit(50),d=r.data||[];
+    box.innerHTML=d.length?d.map(function(o){var t=new Date(o.t_end);return'<div class="row"><div><b>'+esc(o.restaurant||'—')+'</b><div class="m">'+t.toLocaleDateString('ar-SA',{day:'numeric',month:'short'})+' · '+t.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'})+'</div></div><div class="d">'+fmt(o.km)+'</div><button data-act="del" data-oid="'+o.id+'" aria-label="حذف">✕</button></div>'}).join(''):'<div class="empty">لا توجد سجلات</div>';return}
+  if(act==='del'&&confirm('حذف هذا الطلب؟')){await sb.from('orders').delete().eq('id',e.target.dataset.oid);e.target.closest('.row').remove()}
+};
+$('adm').onchange=async function(e){var t=e.target,v=t.dataset.v;if(!v)return;
+  var r=t.checked?await sb.from('stats_access').insert({viewer_id:v,target_id:t.dataset.t}):await sb.from('stats_access').delete().eq('viewer_id',v).eq('target_id',t.dataset.t);
+  if(r.error){t.checked=!t.checked;alert('تعذّر الحفظ: '+r.error.message)}else{(AC[v]=AC[v]||{});if(t.checked)AC[v][t.dataset.t]=1;else delete AC[v][t.dataset.t]}};
+$('achips').onclick=function(e){var p=e.target.dataset.p;if(!p)return;aper=p;[].forEach.call(this.children,function(c){c.classList.toggle('on',c===e.target)});loadAdmin()};
+
+/* ---------- التبويبات ---------- */
+function tab(n){for(var i=1;i<=4;i++){$('v'+i).classList.toggle('hide',i!==n);$('t'+i).classList.toggle('on',i===n)}if(n===2)loadOrders();if(n===3)loadBoard();if(n===4)loadAdmin()}
+$('t1').onclick=function(){tab(1)};$('t2').onclick=function(){tab(2)};$('t3').onclick=function(){tab(3)};$('t4').onclick=function(){tab(4)};
 
 boot().catch(function(){$('auth').classList.remove('hide')});
 })();
