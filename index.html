@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <title>مسافات التوصيل</title>
 <style>
 :root{--bg:#f4f6fa;--card:#fff;--tx:#14203a;--mut:#64708a;--bd:#e3e8f1;--pr:#0f6fff;--ok:#12a150;--wr:#e8590c;--bar:#9ec1ff;--gold:#f5b301;
@@ -59,6 +60,10 @@ details summary{padding:4px 0}
 .tools .btn{width:auto;flex:1 1 30%;padding:10px 6px;font-size:13px}
 select{width:100%;padding:10px;border-radius:12px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font:inherit}
 .tools select{flex:2 1 40%;width:auto}
+.tabs{overflow-x:auto}.tabs button{flex:1 0 auto;padding:10px 14px;white-space:nowrap}
+#mapwrap{isolation:isolate;border-radius:14px;overflow:hidden}#map{height:56vh;min-height:320px;background:var(--bg)}
+a.btn{display:block;text-align:center;text-decoration:none}a.out{text-decoration:none;display:inline-block}
+.zb{display:inline-block;padding:1px 8px;border-radius:8px;font-size:11px;color:#fff}
 </style>
 </head>
 <body>
@@ -80,7 +85,7 @@ select{width:100%;padding:10px;border-radius:12px;border:1px solid var(--bd);bac
 <!-- التطبيق -->
 <section id="app" class="hide">
 <header><div><h1>🛵 مسافات التوصيل</h1><div class="sub" id="who"></div></div><button class="out" id="out">خروج</button></header>
-<div class="tabs"><button id="t1" class="on">التوصيل</button><button id="t2">سجلي</button><button id="t3">🏆 المنافسة</button><button id="t4" class="hide">⚙ الإدارة</button></div>
+<div class="tabs"><button id="t1" class="on">التوصيل</button><button id="t2">سجلي</button><button id="t3">🏆 المنافسة</button><button id="t5">📍 أماكن العمل</button><button id="t4" class="hide">⚙ الإدارة</button></div>
 
 <section id="v1">
   <div class="steps"><div class="step cur" id="s1">١ المطعم</div><div class="step" id="s2">٢ العميل</div><div class="step" id="s3">٣ تم الحفظ</div></div>
@@ -114,6 +119,23 @@ select{width:100%;padding:10px;border-radius:12px;border:1px solid var(--bd);bac
   <div class="card" id="lb"></div>
 </section>
 
+<section id="v5" class="hide">
+  <div class="card" style="padding:10px">
+    <div id="mapwrap"><div id="map"></div></div>
+    <div class="sub" style="margin:8px 4px 0">🟢 احتمال عالٍ · 🟠 متوسط · 🔴 منخفض — اضغط أي نقطة على الخريطة لاختيارها</div>
+  </div>
+  <div class="tools" style="margin-bottom:12px"><button class="btn g" id="zn" style="margin-top:0">🧭 توجه لأقرب نقطة عمل</button><button class="btn s" id="zme" style="color:var(--pr)">📍 موقعي</button></div>
+  <div class="msg" id="zmsg"></div>
+  <div class="card hide" id="sel"><div class="sub">النقطة المختارة</div><b id="selTxt"></b><a class="btn g" id="selGo" target="_blank" rel="noopener">🧭 توجه إلى هذه النقطة</a></div>
+  <div class="card hide" id="zf"><b id="zft">إضافة منطقة عمل</b>
+    <label for="znm">اسم المكان</label><input id="znm" type="text" placeholder="مثال: أمام مجمع المطاعم">
+    <label for="zpr">احتمال الحصول على طلب</label><select id="zpr"><option value="3">🟢 عالٍ</option><option value="2" selected>🟠 متوسط</option><option value="1">🔴 منخفض</option></select>
+    <label for="zrd">نصف قطر المنطقة (متر)</label><input id="zrd" type="number" value="300" min="50" max="3000">
+    <label for="zno">ملاحظة (اختياري)</label><input id="zno" type="text">
+    <div class="tools" style="margin-top:12px"><button class="btn" id="zsave" style="margin-top:0">💾 حفظ</button><button class="btn s hide" id="zdel">🗑 حذف</button></div></div>
+  <div class="card"><div class="sub">أماكن العمل</div><div id="zlist"></div></div>
+</section>
+
 <section id="v4" class="hide">
   <div class="chips" id="achips">
     <button class="chip" data-p="today">اليوم</button><button class="chip" data-p="week">الأسبوع</button><button class="chip on" data-p="month">الشهر</button><button class="chip" data-p="all">الكل</button>
@@ -123,6 +145,7 @@ select{width:100%;padding:10px;border-radius:12px;border:1px solid var(--bd);bac
 </section>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 (function(){
@@ -328,10 +351,74 @@ $('adm').onchange=async function(e){var t=e.target,v=t.dataset.v;if(t.id==='logf
 $('achips').onclick=function(e){var p=e.target.dataset.p;if(!p)return;aper=p;[].forEach.call(this.children,function(c){c.classList.toggle('on',c===e.target)});loadAdmin()};
 
 /* ---------- التبويبات ---------- */
+/* ---------- أماكن العمل ---------- */
+var map=null,zl=null,zones=[],lastPos=null,watchId=null,selPt=null,selMk=null,userMk=null,editId=null,fitted=false;
+var LV={3:{t:'احتمال عالٍ',c:'#12a150'},2:{t:'احتمال متوسط',c:'#f08c00'},1:{t:'احتمال منخفض',c:'#e03131'}};
+function dirUrl(a,b){return'https://www.google.com/maps/dir/?api=1&destination='+a+','+b+'&travelmode=driving'}
+function zm(t,c){var m=$('zmsg');m.textContent=t;m.className='msg '+(c||'')}
+function openMap(){
+  if(!map){
+    map=L.map('map').setView([24.7136,46.6753],11);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+    zl=L.layerGroup().addTo(map);
+    map.on('click',function(e){pick(e.latlng.lat,e.latlng.lng)});
+  }
+  setTimeout(function(){map.invalidateSize()},60);
+  startWatch();loadZones();
+}
+function stopWatch(){if(watchId!=null&&navigator.geolocation){navigator.geolocation.clearWatch(watchId);watchId=null}}
+function startWatch(){if(watchId!=null||!navigator.geolocation)return;
+  watchId=navigator.geolocation.watchPosition(function(p){var first=!lastPos;lastPos={lat:p.coords.latitude,lng:p.coords.longitude,t:Date.now()};drawUser();zlist();if(first&&!zones.length&&map)map.setView([lastPos.lat,lastPos.lng],13)},function(){},{enableHighAccuracy:true,maximumAge:10000,timeout:20000})}
+function drawUser(){if(!map||!lastPos)return;var ll=[lastPos.lat,lastPos.lng];if(userMk)userMk.setLatLng(ll);else userMk=L.circleMarker(ll,{radius:8,color:'#fff',weight:3,fillColor:'#1971ff',fillOpacity:1}).addTo(map).bindTooltip('موقعك')}
+async function loadZones(){
+  var r=await sb.from('work_zones').select('*').order('prob',{ascending:false});
+  if(r.error){zm('تعذّر تحميل أماكن العمل: '+r.error.message,'err');return}
+  zones=r.data||[];zl.clearLayers();
+  zones.forEach(function(z){var c=LV[z.prob].c;
+    L.circle([z.lat,z.lng],{radius:z.radius||300,color:c,weight:2,fillColor:c,fillOpacity:.25,bubblingMouseEvents:false}).addTo(zl).on('click',function(){pick(z.lat,z.lng,z)});
+    L.circleMarker([z.lat,z.lng],{radius:7,color:'#fff',weight:2,fillColor:c,fillOpacity:1,bubblingMouseEvents:false}).addTo(zl).on('click',function(){pick(z.lat,z.lng,z)})});
+  if(!fitted&&zones.length){fitted=true;map.fitBounds(L.latLngBounds(zones.map(function(z){return[z.lat,z.lng]})).pad(.3),{maxZoom:15})}
+  zlist();
+}
+function pick(lat,lng,z){
+  selPt={lat:lat,lng:lng};
+  if(selMk)selMk.setLatLng([lat,lng]);else selMk=L.circleMarker([lat,lng],{radius:10,color:'#fff',weight:3,fillColor:'#7048e8',fillOpacity:.95}).addTo(map);
+  var txt=z?z.name+' — '+LV[z.prob].t+(z.note?' · '+z.note:''):'نقطة محددة ('+lat.toFixed(4)+', '+lng.toFixed(4)+')';
+  if(lastPos)txt+=' · تبعد '+fmt(hav(lastPos,selPt));
+  $('selTxt').textContent=txt;$('selGo').href=dirUrl(lat,lng);$('sel').classList.remove('hide');
+  if(profile&&profile.is_admin){
+    editId=z?z.id:null;$('zf').classList.remove('hide');$('zft').textContent=z?'تعديل منطقة العمل':'إضافة منطقة عمل في النقطة المختارة';
+    $('znm').value=z?z.name:'';$('zpr').value=z?z.prob:2;$('zrd').value=z?z.radius:300;$('zno').value=z&&z.note?z.note:'';$('zdel').classList.toggle('hide',!z);
+  }
+}
+function zlist(){
+  var L2=zones.slice();if(lastPos)L2.sort(function(a,b){return hav(lastPos,a)-hav(lastPos,b)});
+  $('zlist').innerHTML=L2.length?L2.map(function(z){return'<div class="row"><div><b>'+esc(z.name)+'</b><div class="m"><span class="zb" style="background:'+LV[z.prob].c+'">'+LV[z.prob].t+'</span>'+(lastPos?' · '+fmt(hav(lastPos,z)):'')+'</div></div><div style="display:flex;gap:8px"><button class="out" data-z="'+z.id+'">🗺 عرض</button><a class="out" href="'+dirUrl(z.lat,z.lng)+'" target="_blank" rel="noopener" style="color:var(--pr)">🧭 توجه</a></div></div>'}).join(''):'<div class="empty">لم تُضف أماكن عمل بعد</div>';
+}
+$('zlist').onclick=function(e){var id=e.target.dataset.z;if(!id)return;var z=zones.find(function(x){return x.id===id});if(z){map.flyTo([z.lat,z.lng],15);pick(z.lat,z.lng,z);window.scrollTo({top:0,behavior:'smooth'})}};
+$('zme').onclick=function(){if(lastPos){map.flyTo([lastPos.lat,lastPos.lng],15);return}zm('جارٍ تحديد موقعك…');pos().then(function(p){lastPos={lat:p.lat,lng:p.lng,t:Date.now()};drawUser();zm('');map.flyTo([p.lat,p.lng],15);zlist()}).catch(function(e){zm(e.code===1?'فعّل إذن الموقع للمتصفح':'تعذّر تحديد الموقع','err')})};
+function nearest(p){var best=null,bd=1e12;zones.forEach(function(z){var d=hav(p,z);if(d<bd){bd=d;best=z}});return best}
+$('zn').onclick=function(){
+  if(!zones.length)return zm('لا توجد أماكن عمل مضافة بعد','err');
+  if(lastPos&&Date.now()-lastPos.t<300000){var z=nearest(lastPos);map.flyTo([z.lat,z.lng],15);pick(z.lat,z.lng,z);window.open(dirUrl(z.lat,z.lng),'_blank');return}
+  zm('جارٍ تحديد موقعك…');
+  pos().then(function(p){lastPos={lat:p.lat,lng:p.lng,t:Date.now()};drawUser();var z=nearest(lastPos);map.flyTo([z.lat,z.lng],15);pick(z.lat,z.lng,z);zlist();zm('أقرب نقطة عمل: '+z.name+' — اضغط «توجه إلى هذه النقطة» أدناه','ok')}).catch(function(e){zm(e.code===1?'فعّل إذن الموقع للمتصفح':'تعذّر تحديد الموقع','err')});
+};
+$('zsave').onclick=async function(){
+  var n=$('znm').value.trim();if(!selPt||!n)return zm('اختر نقطة على الخريطة واكتب اسم المكان','err');
+  var row={name:n,lat:selPt.lat,lng:selPt.lng,prob:+$('zpr').value,radius:Math.min(3000,Math.max(50,+$('zrd').value||300)),note:$('zno').value.trim()||null};
+  this.disabled=true;
+  var r=editId?await sb.from('work_zones').update(row).eq('id',editId):await sb.from('work_zones').insert(row);
+  this.disabled=false;
+  if(r.error)return zm('تعذّر الحفظ: '+r.error.message,'err');
+  zm('تم الحفظ ✔','ok');editId=null;$('zf').classList.add('hide');loadZones();
+};
+$('zdel').onclick=async function(){if(!editId||!confirm('حذف منطقة العمل هذه؟'))return;var r=await sb.from('work_zones').delete().eq('id',editId);if(r.error)return zm('تعذّر الحذف: '+r.error.message,'err');editId=null;$('zf').classList.add('hide');$('sel').classList.add('hide');loadZones()};
+
 var lastLog={};
 function logVisit(sec){if(!me||!profile||profile.is_admin)return;var t=Date.now();if(lastLog[sec]&&t-lastLog[sec]<30000)return;lastLog[sec]=t;sb.from('access_log').insert({section:sec}).then(function(){},function(){})}
-function tab(n){if(n===2)logVisit('stats');if(n===3)logVisit('board');for(var i=1;i<=4;i++){$('v'+i).classList.toggle('hide',i!==n);$('t'+i).classList.toggle('on',i===n)}if(n===2)loadOrders();if(n===3)loadBoard();if(n===4)loadAdmin()}
-$('t1').onclick=function(){tab(1)};$('t2').onclick=function(){tab(2)};$('t3').onclick=function(){tab(3)};$('t4').onclick=function(){tab(4)};
+function tab(n){if(n===2)logVisit('stats');if(n===3)logVisit('board');for(var i=1;i<=5;i++){$('v'+i).classList.toggle('hide',i!==n);$('t'+i).classList.toggle('on',i===n)}if(n===2)loadOrders();if(n===3)loadBoard();if(n===4)loadAdmin();if(n===5)openMap();else stopWatch()}
+$('t1').onclick=function(){tab(1)};$('t2').onclick=function(){tab(2)};$('t3').onclick=function(){tab(3)};$('t4').onclick=function(){tab(4)};$('t5').onclick=function(){tab(5)};
 
 boot().catch(function(){$('auth').classList.remove('hide')});
 })();
