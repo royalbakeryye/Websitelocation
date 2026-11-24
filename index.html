@@ -126,11 +126,14 @@ a.btn{display:block;text-align:center;text-decoration:none}a.out{text-decoration
   </div>
   <div class="tools" style="margin-bottom:12px"><button class="btn g" id="zn" style="margin-top:0">🧭 توجه لأقرب نقطة عمل</button><button class="btn s" id="zme" style="color:var(--pr)">📍 موقعي</button></div>
   <div class="msg" id="zmsg"></div>
+  <div class="card hide" id="zlink"><b>➕ إضافة مكان من رابط Google Maps</b>
+    <label for="zlk">الصق رابط المكان (أو الإحداثيات)</label><input id="zlk" type="text" dir="ltr" placeholder="https://www.google.com/maps/place/...">
+    <div class="sub" style="margin-top:6px">الروابط المختصرة (maps.app.goo.gl) لا تُقرأ؛ افتحها في المتصفح وانسخ الرابط الكامل من شريط العنوان.</div>
+    <button class="btn" id="zlgo">📌 تحديد المكان</button></div>
   <div class="card hide" id="sel"><div class="sub">النقطة المختارة</div><b id="selTxt"></b><a class="btn g" id="selGo" target="_blank" rel="noopener">🧭 توجه إلى هذه النقطة</a></div>
   <div class="card hide" id="zf"><b id="zft">إضافة منطقة عمل</b>
     <label for="znm">اسم المكان</label><input id="znm" type="text" placeholder="مثال: أمام مجمع المطاعم">
     <label for="zpr">احتمال الحصول على طلب</label><select id="zpr"><option value="3">🟢 عالٍ</option><option value="2" selected>🟠 متوسط</option><option value="1">🔴 منخفض</option></select>
-    <label for="zrd">نصف قطر المنطقة (متر)</label><input id="zrd" type="number" value="300" min="50" max="3000">
     <label for="zno">ملاحظة (اختياري)</label><input id="zno" type="text">
     <div class="tools" style="margin-top:12px"><button class="btn" id="zsave" style="margin-top:0">💾 حفظ</button><button class="btn s hide" id="zdel">🗑 حذف</button></div></div>
   <div class="card"><div class="sub">أماكن العمل</div><div id="zlist"></div></div>
@@ -363,6 +366,7 @@ function openMap(){
     zl=L.layerGroup().addTo(map);
     map.on('click',function(e){pick(e.latlng.lat,e.latlng.lng)});
   }
+  $('zlink').classList.toggle('hide',!(profile&&profile.is_admin));
   setTimeout(function(){map.invalidateSize()},60);
   startWatch();loadZones();
 }
@@ -388,7 +392,7 @@ function pick(lat,lng,z){
   $('selTxt').textContent=txt;$('selGo').href=dirUrl(lat,lng);$('sel').classList.remove('hide');
   if(profile&&profile.is_admin){
     editId=z?z.id:null;$('zf').classList.remove('hide');$('zft').textContent=z?'تعديل منطقة العمل':'إضافة منطقة عمل في النقطة المختارة';
-    $('znm').value=z?z.name:'';$('zpr').value=z?z.prob:2;$('zrd').value=z?z.radius:300;$('zno').value=z&&z.note?z.note:'';$('zdel').classList.toggle('hide',!z);
+    $('znm').value=z?z.name:'';$('zpr').value=z?z.prob:2;$('zno').value=z&&z.note?z.note:'';$('zdel').classList.toggle('hide',!z);
   }
 }
 function zlist(){
@@ -404,9 +408,16 @@ $('zn').onclick=function(){
   zm('جارٍ تحديد موقعك…');
   pos().then(function(p){lastPos={lat:p.lat,lng:p.lng,t:Date.now()};drawUser();var z=nearest(lastPos);map.flyTo([z.lat,z.lng],15);pick(z.lat,z.lng,z);zlist();zm('أقرب نقطة عمل: '+z.name+' — اضغط «توجه إلى هذه النقطة» أدناه','ok')}).catch(function(e){zm(e.code===1?'فعّل إذن الموقع للمتصفح':'تعذّر تحديد الموقع','err')});
 };
+function parseGmap(t){try{t=decodeURIComponent(t)}catch(e){}
+  var m=t.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)||t.match(/[?&](?:q|query|ll|destination|daddr|center)=(?:loc:)?\s*(-?\d+\.\d+)[,+ ]\s*(-?\d+\.\d+)/)||t.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)||t.match(/^\s*(-?\d+\.\d+)\s*[,،\s]\s*(-?\d+\.\d+)\s*$/);
+  if(!m)return null;var a=+m[1],b=+m[2];return Math.abs(a)<=90&&Math.abs(b)<=180?{lat:a,lng:b}:null}
+function gname(t){var m=t.match(/\/place\/([^\/@?]+)/);if(!m)return'';var n=m[1].replace(/\+/g,' ');try{n=decodeURIComponent(n)}catch(e){}return/^-?\d/.test(n)?'':n}
+$('zlgo').onclick=function(){var t=$('zlk').value.trim(),c=parseGmap(t);
+  if(!c)return zm(/goo\.gl|maps\.app/.test(t)?'الرابط المختصر لا يمكن قراءته. افتحه في المتصفح وانسخ الرابط الكامل من شريط العنوان.':'لم أجد إحداثيات في هذا الرابط','err');
+  zm('');map.flyTo([c.lat,c.lng],16);pick(c.lat,c.lng);var n=gname(t);if(n)$('znm').value=n;$('zlk').value='';$('zf').scrollIntoView({behavior:'smooth',block:'center'})};
 $('zsave').onclick=async function(){
   var n=$('znm').value.trim();if(!selPt||!n)return zm('اختر نقطة على الخريطة واكتب اسم المكان','err');
-  var row={name:n,lat:selPt.lat,lng:selPt.lng,prob:+$('zpr').value,radius:Math.min(3000,Math.max(50,+$('zrd').value||300)),note:$('zno').value.trim()||null};
+  var row={name:n,lat:selPt.lat,lng:selPt.lng,prob:+$('zpr').value,note:$('zno').value.trim()||null};
   this.disabled=true;
   var r=editId?await sb.from('work_zones').update(row).eq('id',editId):await sb.from('work_zones').insert(row);
   this.disabled=false;
