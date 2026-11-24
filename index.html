@@ -126,10 +126,11 @@ a.btn{display:block;text-align:center;text-decoration:none}a.out{text-decoration
   </div>
   <div class="tools" style="margin-bottom:12px"><button class="btn g" id="zn" style="margin-top:0">🧭 توجه لأقرب نقطة عمل</button><button class="btn s" id="zme" style="color:var(--pr)">📍 موقعي</button></div>
   <div class="msg" id="zmsg"></div>
-  <div class="card hide" id="zlink"><b>➕ إضافة مكان من رابط Google Maps</b>
-    <label for="zlk">الصق رابط المكان (أو الإحداثيات)</label><input id="zlk" type="text" dir="ltr" placeholder="https://www.google.com/maps/place/...">
+  <div class="card hide" id="zlink"><b>➕ إضافة مكان عمل</b>
+    <label for="zlk">الصق رابط Google Maps (أو الإحداثيات)</label><input id="zlk" type="text" dir="ltr" placeholder="https://www.google.com/maps/place/...">
     <div class="sub" style="margin-top:6px">الروابط المختصرة (maps.app.goo.gl) لا تُقرأ؛ افتحها في المتصفح وانسخ الرابط الكامل من شريط العنوان.</div>
-    <button class="btn" id="zlgo">📌 تحديد المكان</button></div>
+    <button class="btn" id="zlgo">📌 تحديد المكان من الرابط</button>
+    <button class="btn g" id="zloc">📍 أو استخدم موقعي الحالي</button></div>
   <div class="card hide" id="sel"><div class="sub">النقطة المختارة</div><b id="selTxt"></b><a class="btn g" id="selGo" target="_blank" rel="noopener">🧭 توجه إلى هذه النقطة</a></div>
   <div class="card hide" id="zf"><b id="zft">إضافة منطقة عمل</b>
     <label for="znm">اسم المكان</label><input id="znm" type="text" placeholder="مثال: أمام مجمع المطاعم">
@@ -200,6 +201,8 @@ async function boot(){
   profile=p.data||{display_name:me.email.split('@')[0],username:''};
   if(profile.active===false){await sb.auth.signOut();$('auth').classList.remove('hide');$('app').classList.add('hide');am('هذا الحساب موقوف. تواصل مع الإدارة.','err');return}
   $('t4').classList.toggle('hide',!profile.is_admin);
+  HID={};var hr=await sb.from('hidden_sections').select('section').eq('user_id',me.id);(hr.data||[]).forEach(function(x){HID[x.section]=1});
+  [['stats','t2'],['board','t3'],['zones','t5']].forEach(function(c){$(c[1]).classList.toggle('hide',!!HID[c[0]]&&profile.username!=='maaz')});
   $('who').textContent='مرحباً '+profile.display_name+(profile.is_admin?' (مدير)':'');
   try{pending=JSON.parse(localStorage.getItem('dl_pending_'+me.id))}catch(e){pending=null}
   $('auth').classList.add('hide');$('app').classList.remove('hide');
@@ -303,21 +306,24 @@ $('lchips').onclick=function(e){var p=e.target.dataset.p;if(!p)return;lper=p;[].
 
 /* ---------- التبويبات ---------- */
 /* ---------- لوحة الإدارة ---------- */
-var aper='month',AP=[],AC={};
+var aper='month',AP=[],AC={},HS={},HID={};
+var SECS=[['stats','سجلي'],['board','المنافسة'],['zones','أماكن العمل']],SECL={stats:'📊 سجلي وإحصائياتي',board:'🏆 المنافسة',zones:'📍 أماكن العمل',admin:'⚙ الإدارة'};
+function hideBox(p,sup){if(!sup||p.username==='maaz')return'';return'<details><summary class="sub" style="cursor:pointer">الأقسام المخفية عن هذا الحساب</summary><div style="margin-top:8px">'+SECS.map(function(c){return'<label class="ck"><input type="checkbox" data-hv="'+p.id+'" data-hs="'+c[0]+'"'+((HS[p.id]||{})[c[0]]?' checked':'')+'> إخفاء «'+c[1]+'»</label>'}).join('')+'</div></details>'}
 async function loadAdmin(){
   var s=startOf(aper),a=$('adm');a.innerHTML='<div class="card empty">جارٍ التحميل…</div>';
-  var R=await Promise.all([sb.from('profiles').select('*').order('created_at'),sb.from('stats_access').select('*'),sb.rpc('leaderboard',{p_from:s?new Date(s).toISOString():null})]);
+  var R=await Promise.all([sb.from('profiles').select('*').order('created_at'),sb.from('stats_access').select('*'),sb.rpc('leaderboard',{p_from:s?new Date(s).toISOString():null}),profile.username==='maaz'?sb.from('hidden_sections').select('*'):Promise.resolve({data:[]})]);
   if(R[0].error){a.innerHTML='<div class="card empty">'+esc(R[0].error.message)+'</div>';return}
   AP=R[0].data;AC={};(R[1].data||[]).forEach(function(x){(AC[x.viewer_id]=AC[x.viewer_id]||{})[x.target_id]=1});
-  var isSuper=profile.username==='maaz',S={},to=0,tk=0;(R[2].data||[]).forEach(function(x){S[x.user_id]=x;to+=x.orders_count;tk+=x.total_km});
+  HS={};(R[3].data||[]).forEach(function(x){(HS[x.user_id]=HS[x.user_id]||{})[x.section]=1});var isSuper=profile.username==='maaz',S={},to=0,tk=0;(R[2].data||[]).forEach(function(x){S[x.user_id]=x;to+=x.orders_count;tk+=x.total_km});
   var h='<div class="stats"><div class="stat"><span>المناديب</span><b>'+AP.length+'</b></div><div class="stat"><span>الطلبات</span><b>'+to+'</b></div><div class="stat" style="grid-column:span 2"><span>إجمالي الكيلومترات</span><b>'+tk.toFixed(1)+' كم</b></div></div>';
   h+='<div class="tools" style="margin-bottom:12px"><button class="btn s" data-act="all" style="color:var(--ok)">👁 الكل يرى الكل</button><button class="btn s" data-act="none">🚫 كلٌّ يرى نفسه فقط</button></div>';
-  h+='<div class="card"><details id="logbox"><summary style="cursor:pointer;font-weight:700">🕒 سجل زيارات الإحصائيات</summary><div class="tools" style="margin:10px 0"><select id="logf"><option value="">كل المناديب</option>'+AP.map(function(p){return'<option value="'+p.id+'">'+esc(p.display_name)+'</option>'}).join('')+'</select><button class="btn s" data-act="logr">↻ تحديث</button><button class="btn s" data-act="logc">🗑 مسح</button></div><div id="logl"></div></details></div>';
+  if(isSuper)h+='<div class="card"><div class="sub" style="margin-bottom:8px">إخفاء الأقسام عن الجميع (عداك)</div><div class="tools">'+SECS.map(function(c){var o=AP.filter(function(x){return x.username!=='maaz'}),all=o.length&&o.every(function(x){return(HS[x.id]||{})[c[0]]});return'<button class="btn s" data-act="hall" data-sec="'+c[0]+'" style="color:'+(all?'var(--ok)':'var(--wr)')+'">'+(all?'👁 إظهار ':'🙈 إخفاء ')+c[1]+'</button>'}).join('')+'</div></div>';
+  if(isSuper)h+='<div class="card"><details id="logbox"><summary style="cursor:pointer;font-weight:700">🕒 سجل زيارات الإحصائيات</summary><div class="tools" style="margin:10px 0"><select id="logf"><option value="">كل المناديب</option>'+AP.map(function(p){return'<option value="'+p.id+'">'+esc(p.display_name)+'</option>'}).join('')+'</select><button class="btn s" data-act="logr">↻ تحديث</button><button class="btn s" data-act="logc">🗑 مسح</button></div><div id="logl"></div></details></div>';
   h+=AP.map(function(p){var x=S[p.id]||{orders_count:0,total_km:0};
     var perm=p.is_admin?'<div class="sub">المدير يرى كل الإحصائيات تلقائياً</div>':'<div class="sub" style="margin-bottom:6px">يستطيع رؤية إحصائيات:</div>'+(AP.length>1?AP.filter(function(t){return t.id!==p.id}).map(function(t){return'<label class="ck"><input type="checkbox" data-v="'+p.id+'" data-t="'+t.id+'"'+((AC[p.id]||{})[t.id]?' checked':'')+'> '+esc(t.display_name)+'</label>'}).join(''):'');
     return'<div class="card" data-id="'+p.id+'"><div class="lbh"><span>'+esc(p.display_name)+' <span class="sub">@'+esc(p.username)+'</span> '+(p.is_admin?'<span class="badge">'+(p.username==='maaz'?'المدير الأساسي':'مدير')+'</span> ':'')+(p.active?'':'<span class="badge off">موقوف</span>')+'</span><span>'+x.orders_count+' طلب · '+x.total_km.toFixed(1)+' كم</span></div>'
     +'<div class="tools" style="margin:10px 0;flex-wrap:wrap">'+((!p.is_admin||isSuper||p.id===me.id)?'<button class="btn s" data-act="ren">✎ الاسم</button>':'')+'<button class="btn s" data-act="rec">📋 السجل</button>'+((!p.is_admin||(isSuper&&p.username!=='maaz'))?'<button class="btn s" data-act="tg">'+(p.active?'⏸ إيقاف':'▶ تفعيل')+'</button>':'')+((isSuper&&p.username!=='maaz')?'<button class="btn s" data-act="adm" style="color:var(--pr)">'+(p.is_admin?'⬇ إزالة الإدارة':'⬆ ترقية لمدير')+'</button>':'')+'</div>'
-    +'<details><summary class="sub" style="cursor:pointer">صلاحيات المشاهدة</summary><div style="margin-top:8px">'+perm+'</div></details><div class="recs"></div></div>'}).join('');
+    +'<details><summary class="sub" style="cursor:pointer">صلاحيات المشاهدة</summary><div style="margin-top:8px">'+perm+'</div></details>'+hideBox(p,isSuper)+'<div class="recs"></div></div>'}).join('');
   a.innerHTML=h;
 }
 function mapLinks(o){
@@ -331,13 +337,16 @@ async function loadLog(){var l=$('logl'),f=$('logf').value;l.innerHTML='<div cla
   var q=sb.from('access_log').select('*').order('created_at',{ascending:false}).limit(200);if(f)q=q.eq('user_id',f);
   var r=await q;if(r.error){l.innerHTML='<div class="empty">'+esc(r.error.message)+'</div>';return}
   var N={};AP.forEach(function(p){N[p.id]=p.display_name});
-  l.innerHTML=r.data.length?r.data.map(function(x){var t=new Date(x.created_at);return'<div class="row"><div><b>'+esc(N[x.user_id]||'—')+'</b><div class="m">'+(x.section==='board'?'🏆 المنافسة':'📊 سجلي وإحصائياتي')+'</div></div><div class="m" style="text-align:end">'+t.toLocaleDateString('ar-SA',{day:'numeric',month:'short'})+'<br>'+t.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+'</div></div>'}).join(''):'<div class="empty">لا توجد زيارات مسجلة</div>'}
+  l.innerHTML=r.data.length?r.data.map(function(x){var t=new Date(x.created_at);return'<div class="row"><div><b>'+esc(N[x.user_id]||'—')+'</b><div class="m">'+(SECL[x.section]||esc(x.section))+'</div></div><div class="m" style="text-align:end">'+t.toLocaleDateString('ar-SA',{day:'numeric',month:'short'})+'<br>'+t.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+'</div></div>'}).join(''):'<div class="empty">لا توجد زيارات مسجلة</div>'}
 $('adm').addEventListener('toggle',function(e){if(e.target.id==='logbox'&&e.target.open)loadLog()},true);
 $('adm').onclick=async function(e){
   var act=e.target.dataset.act;if(!act)return;
   var card=e.target.closest('[data-id]'),id=card&&card.dataset.id,p=AP.find(function(x){return x.id===id});
   if(act==='logr')return loadLog();
   if(act==='logc'){if(confirm('مسح كل سجل الزيارات؟')){await sb.from('access_log').delete().not('id','is',null);loadLog()}return}
+  if(act==='hall'){var sec=e.target.dataset.sec,oth=AP.filter(function(x){return x.username!=='maaz'}),allh=oth.length&&oth.every(function(x){return(HS[x.id]||{})[sec]});
+    var hq2=allh?await sb.from('hidden_sections').delete().eq('section',sec):await sb.from('hidden_sections').upsert(oth.map(function(x){return{user_id:x.id,section:sec}}),{ignoreDuplicates:true});
+    if(hq2.error)alert('تعذّر الحفظ: '+hq2.error.message);return loadAdmin()}
   if(act==='all'){var pr=[];AP.forEach(function(v){if(!v.is_admin)AP.forEach(function(t){if(t.id!==v.id)pr.push({viewer_id:v.id,target_id:t.id})})});if(pr.length)await sb.from('stats_access').upsert(pr);return loadAdmin()}
   if(act==='none'){if(confirm('إلغاء كل صلاحيات المشاهدة؟')){await sb.from('stats_access').delete().not('viewer_id','is',null);loadAdmin()}return}
   if(act==='ren'){var n=prompt('الاسم الجديد',p.display_name);if(n&&n.trim()){await sb.from('profiles').update({display_name:n.trim()}).eq('id',id);loadAdmin()}return}
@@ -348,7 +357,10 @@ $('adm').onclick=async function(e){
     box.innerHTML=d.length?d.map(function(o){var t=new Date(o.t_end);return'<div class="row"><div><b>'+esc(o.restaurant||'—')+'</b><div class="m">'+t.toLocaleDateString('ar-SA',{day:'numeric',month:'short'})+' · '+t.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'})+'</div>'+mapLinks(o)+'</div><div class="d">'+fmt(o.km)+'</div><button data-act="del" data-oid="'+o.id+'" aria-label="حذف">✕</button></div>'}).join(''):'<div class="empty">لا توجد سجلات</div>';return}
   if(act==='del'&&confirm('حذف هذا الطلب؟')){await sb.from('orders').delete().eq('id',e.target.dataset.oid);e.target.closest('.row').remove()}
 };
-$('adm').onchange=async function(e){var t=e.target,v=t.dataset.v;if(t.id==='logf'){loadLog();return}if(!v)return;
+$('adm').onchange=async function(e){var t=e.target,v=t.dataset.v;if(t.id==='logf'){loadLog();return}
+  if(t.dataset.hv){var hu=t.dataset.hv,hs=t.dataset.hs,hq=t.checked?await sb.from('hidden_sections').insert({user_id:hu,section:hs}):await sb.from('hidden_sections').delete().eq('user_id',hu).eq('section',hs);
+    if(hq.error){t.checked=!t.checked;alert('تعذّر الحفظ: '+hq.error.message)}else{(HS[hu]=HS[hu]||{});if(t.checked)HS[hu][hs]=1;else delete HS[hu][hs]}return}
+  if(!v)return;
   var r=t.checked?await sb.from('stats_access').insert({viewer_id:v,target_id:t.dataset.t}):await sb.from('stats_access').delete().eq('viewer_id',v).eq('target_id',t.dataset.t);
   if(r.error){t.checked=!t.checked;alert('تعذّر الحفظ: '+r.error.message)}else{(AC[v]=AC[v]||{});if(t.checked)AC[v][t.dataset.t]=1;else delete AC[v][t.dataset.t]}};
 $('achips').onclick=function(e){var p=e.target.dataset.p;if(!p)return;aper=p;[].forEach.call(this.children,function(c){c.classList.toggle('on',c===e.target)});loadAdmin()};
@@ -387,7 +399,7 @@ async function loadZones(){
 function pick(lat,lng,z){
   selPt={lat:lat,lng:lng};
   if(selMk)selMk.setLatLng([lat,lng]);else selMk=L.circleMarker([lat,lng],{radius:10,color:'#fff',weight:3,fillColor:'#7048e8',fillOpacity:.95}).addTo(map);
-  var txt=z?z.name+' — '+LV[z.prob].t+(z.note?' · '+z.note:''):'نقطة محددة ('+lat.toFixed(4)+', '+lng.toFixed(4)+')';
+  var txt=z?z.name+' — '+LV[z.prob].t+(z.note?' · '+z.note:'')+(z.added_by_name?' · أضافها '+z.added_by_name:''):'نقطة محددة ('+lat.toFixed(4)+', '+lng.toFixed(4)+')';
   if(lastPos)txt+=' · تبعد '+fmt(hav(lastPos,selPt));
   $('selTxt').textContent=txt;$('selGo').href=dirUrl(lat,lng);$('sel').classList.remove('hide');
   if(profile&&profile.is_admin){
@@ -397,7 +409,7 @@ function pick(lat,lng,z){
 }
 function zlist(){
   var L2=zones.slice();if(lastPos)L2.sort(function(a,b){return hav(lastPos,a)-hav(lastPos,b)});
-  $('zlist').innerHTML=L2.length?L2.map(function(z){return'<div class="row"><div><b>'+esc(z.name)+'</b><div class="m"><span class="zb" style="background:'+LV[z.prob].c+'">'+LV[z.prob].t+'</span>'+(lastPos?' · '+fmt(hav(lastPos,z)):'')+'</div></div><div style="display:flex;gap:8px"><button class="out" data-z="'+z.id+'">🗺 عرض</button><a class="out" href="'+dirUrl(z.lat,z.lng)+'" target="_blank" rel="noopener" style="color:var(--pr)">🧭 توجه</a></div></div>'}).join(''):'<div class="empty">لم تُضف أماكن عمل بعد</div>';
+  $('zlist').innerHTML=L2.length?L2.map(function(z){return'<div class="row"><div><b>'+esc(z.name)+'</b>'+(z.added_by_name?' <span class="sub" style="font-size:11px">· أضافها '+esc(z.added_by_name)+'</span>':'')+'<div class="m"><span class="zb" style="background:'+LV[z.prob].c+'">'+LV[z.prob].t+'</span>'+(lastPos?' · '+fmt(hav(lastPos,z)):'')+'</div></div><div style="display:flex;gap:8px"><button class="out" data-z="'+z.id+'">🗺 عرض</button><a class="out" href="'+dirUrl(z.lat,z.lng)+'" target="_blank" rel="noopener" style="color:var(--pr)">🧭 توجه</a></div></div>'}).join(''):'<div class="empty">لم تُضف أماكن عمل بعد</div>';
 }
 $('zlist').onclick=function(e){var id=e.target.dataset.z;if(!id)return;var z=zones.find(function(x){return x.id===id});if(z){map.flyTo([z.lat,z.lng],15);pick(z.lat,z.lng,z);window.scrollTo({top:0,behavior:'smooth'})}};
 $('zme').onclick=function(){if(lastPos){map.flyTo([lastPos.lat,lastPos.lng],15);return}zm('جارٍ تحديد موقعك…');pos().then(function(p){lastPos={lat:p.lat,lng:p.lng,t:Date.now()};drawUser();zm('');map.flyTo([p.lat,p.lng],15);zlist()}).catch(function(e){zm(e.code===1?'فعّل إذن الموقع للمتصفح':'تعذّر تحديد الموقع','err')})};
@@ -415,6 +427,8 @@ function gname(t){var m=t.match(/\/place\/([^\/@?]+)/);if(!m)return'';var n=m[1]
 $('zlgo').onclick=function(){var t=$('zlk').value.trim(),c=parseGmap(t);
   if(!c)return zm(/goo\.gl|maps\.app/.test(t)?'الرابط المختصر لا يمكن قراءته. افتحه في المتصفح وانسخ الرابط الكامل من شريط العنوان.':'لم أجد إحداثيات في هذا الرابط','err');
   zm('');map.flyTo([c.lat,c.lng],16);pick(c.lat,c.lng);var n=gname(t);if(n)$('znm').value=n;$('zlk').value='';$('zf').scrollIntoView({behavior:'smooth',block:'center'})};
+$('zloc').onclick=function(){var b=this;b.disabled=true;zm('جارٍ تحديد موقعك…');
+  pos().then(function(p){lastPos={lat:p.lat,lng:p.lng,t:Date.now()};drawUser();zm('');map.flyTo([p.lat,p.lng],17);pick(p.lat,p.lng);$('zf').scrollIntoView({behavior:'smooth',block:'center'})}).catch(function(e){zm(e.code===1?'فعّل إذن الموقع للمتصفح':'تعذّر تحديد الموقع','err')}).then(function(){b.disabled=false})};
 $('zsave').onclick=async function(){
   var n=$('znm').value.trim();if(!selPt||!n)return zm('اختر نقطة على الخريطة واكتب اسم المكان','err');
   var row={name:n,lat:selPt.lat,lng:selPt.lng,prob:+$('zpr').value,note:$('zno').value.trim()||null};
@@ -427,8 +441,8 @@ $('zsave').onclick=async function(){
 $('zdel').onclick=async function(){if(!editId||!confirm('حذف منطقة العمل هذه؟'))return;var r=await sb.from('work_zones').delete().eq('id',editId);if(r.error)return zm('تعذّر الحذف: '+r.error.message,'err');editId=null;$('zf').classList.add('hide');$('sel').classList.add('hide');loadZones()};
 
 var lastLog={};
-function logVisit(sec){if(!me||!profile||profile.is_admin)return;var t=Date.now();if(lastLog[sec]&&t-lastLog[sec]<30000)return;lastLog[sec]=t;sb.from('access_log').insert({section:sec}).then(function(){},function(){})}
-function tab(n){if(n===2)logVisit('stats');if(n===3)logVisit('board');for(var i=1;i<=5;i++){$('v'+i).classList.toggle('hide',i!==n);$('t'+i).classList.toggle('on',i===n)}if(n===2)loadOrders();if(n===3)loadBoard();if(n===4)loadAdmin();if(n===5)openMap();else stopWatch()}
+function logVisit(sec){if(!me||!profile||profile.username==='maaz')return;var t=Date.now();if(lastLog[sec]&&t-lastLog[sec]<30000)return;lastLog[sec]=t;sb.from('access_log').insert({section:sec}).then(function(){},function(){})}
+function tab(n){if((n===2&&HID.stats)||(n===3&&HID.board)||(n===5&&HID.zones))return;if(n===2)logVisit('stats');if(n===3)logVisit('board');if(n===4)logVisit('admin');if(n===5)logVisit('zones');for(var i=1;i<=5;i++){$('v'+i).classList.toggle('hide',i!==n);$('t'+i).classList.toggle('on',i===n)}if(n===2)loadOrders();if(n===3)loadBoard();if(n===4)loadAdmin();if(n===5)openMap();else stopWatch()}
 $('t1').onclick=function(){tab(1)};$('t2').onclick=function(){tab(2)};$('t3').onclick=function(){tab(3)};$('t4').onclick=function(){tab(4)};$('t5').onclick=function(){tab(5)};
 
 boot().catch(function(){$('auth').classList.remove('hide')});
